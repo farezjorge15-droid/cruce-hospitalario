@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados con recuadros sólidos para pestañas y textos para garantizar legibilidad total
+# Estilos CSS avanzados: Todo el contenido va dentro de tarjetas/cuadros blancos sólidos con letras oscuras y legibles
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -40,7 +40,7 @@ st.markdown("""
         background-attachment: fixed;
     }
 
-    /* Estilo de Cabecera Institucional Tipo Portal Oficial */
+    /* Cabecera Institucional */
     .portal-header {
         background: linear-gradient(135deg, #0b3c5d 0%, #1d2731 100%);
         padding: 25px 20px;
@@ -73,7 +73,7 @@ st.markdown("""
     /* Recuadros Sólidos Estilo Botón para las Pestañas de Navegación */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
-        background-color: rgba(255, 255, 255, 0.92);
+        background-color: rgba(255, 255, 255, 0.95);
         padding: 10px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
@@ -92,6 +92,31 @@ st.markdown("""
     .stTabs [aria-selected="true"] {
         background-color: #0b3c5d !important;
         border-bottom: 3px solid #66b3ff !important;
+    }
+
+    /* Contenedor panel blanco sólido para el interior de las pestañas */
+    .tab-content-box {
+        background-color: #ffffff;
+        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        padding: 25px 30px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+        margin-top: 15px;
+        color: #1d2731;
+    }
+
+    /* Estilos de títulos y textos dentro de los paneles */
+    .tab-content-box h2, .tab-content-box h3 {
+        color: #0b3c5d;
+        font-weight: 800;
+        margin-top: 0;
+    }
+
+    .tab-content-box p, .tab-content-box li {
+        color: #1d2731;
+        font-size: 15px;
+        line-height: 1.6;
+        font-weight: 500;
     }
 
     /* Tarjetas de Métricas Profesionales con Fondo Sólido */
@@ -115,17 +140,17 @@ st.markdown("""
         font-size: 24px !important;
     }
 
-    /* Contenedores informativos con fondo sólido para total visibilidad */
+    /* Mensajes informativos */
     .stAlert {
-        background-color: rgba(255, 255, 255, 0.95) !important;
+        background-color: #ffffff !important;
         color: #0b3c5d !important;
         font-weight: 600;
-        border: 1px solid #d0d7de;
+        border: 1px solid #328cc1 !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
 
     .acta-document-box {
-        background-color: rgba(255, 255, 255, 0.97);
+        background-color: #ffffff;
         border: 1px solid #d0d7de;
         border-radius: 8px;
         padding: 30px;
@@ -161,7 +186,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Pestañas Superiores de Navegación (Estilizadas como Botones Profesionales)
+# Pestañas Superiores de Navegación
 tab_matriz, tab_actas, tab_lotes, tab_ayuda = st.tabs([
     "📊 Matriz Consolidada", 
     "📋 Actas Oficiales", 
@@ -686,18 +711,27 @@ with tab_actas:
 
 # PESTAÑA 3: LOTES Y CADUCIDADES
 with tab_lotes:
-    st.subheader("📊 Lotes y Caducidades Registradas")
     if 'df_resultado' in st.session_state:
+        st.markdown("""
+            <div class="tab-content-box">
+                <h2>📊 Lotes y Caducidades Registradas</h2>
+            </div>
+        """, unsafe_allow_html=True)
         st.dataframe(st.session_state['df_resultado'][['Nro.', 'PDF Origen', 'Servicio', 'Dispositivo Médico', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad']], use_container_width=True, hide_index=True)
     else:
         st.info("Cargue los archivos para ver la distribución de lotes y fechas de caducidad.")
 
-# PESTAÑA 4: PLANTILLAS Y AYUDA
+# PESTAÑA 4: PLANTILLAS Y AYUDA (Envuelta en tarjeta blanca sólida para lectura perfecta)
 with tab_ayuda:
-    st.subheader("💡 Plantillas y Ayuda del Sistema")
     st.markdown("""
-    * **Paso 1:** Suba sus archivos PDF con los pedidos de requisición de los diferentes servicios hospitalarios.
-    * **Paso 2:** Cargue el Excel de existencias por lote y fecha de caducidad (`F. Cad`).
-    * **Paso 3:** Cargue el archivo Excel unificado de stock general de bodega o farmacia.
-    * **Paso 4:** Presione el botón **Ejecutar Cruce FEFO en Lote** para consolidar automáticamente todo el sistema con el formato oficial.
-    """)
+        <div class="tab-content-box">
+            <h2>💡 Plantillas y Ayuda del Sistema</h2>
+            <hr style="border: 0; border-top: 1px solid #d0d7de; margin-bottom: 20px;">
+            <ul>
+                <li><b>Paso 1:</b> Suba sus archivos PDF con los pedidos de requisición de los diferentes servicios hospitalarios.</li>
+                <li><b>Paso 2:</b> Cargue el Excel de existencias por lote y fecha de caducidad (<code>F. Cad</code>).</li>
+                <li><b>Paso 3:</b> Cargue el archivo Excel unificado de stock general de bodega o farmacia.</li>
+                <li><b>Paso 4:</b> Presione el botón <b>🚀 Ejecutar Cruce FEFO en Lote</b> para consolidar automáticamente todo el sistema con el formato oficial.</li>
+            </ul>
+        </div>
+    """, unsafe_allow_html=True)
