@@ -27,7 +27,6 @@ st.markdown("""
     footer {visibility: hidden;}
     .stApp { background-color: #f8f9fa; }
 
-    /* Contenedor Superior */
     .top-nav-container {
         background: #ffffff;
         padding: 12px 20px;
@@ -40,7 +39,6 @@ st.markdown("""
         border: 1px solid #e0e0e0;
     }
 
-    /* Documento Acta en Pantalla */
     .acta-document-box {
         background-color: #ffffff;
         border: 1px solid #d0d7de;
@@ -65,19 +63,6 @@ st.markdown("""
         font-size: 14px;
         text-align: center;
         margin-bottom: 15px;
-    }
-
-    .acta-alert-banner {
-        background-color: #fde8e4;
-        border: 1px solid #f5c2c7;
-        color: #842029;
-        padding: 10px 15px;
-        border-radius: 6px;
-        font-size: 13px;
-        margin-bottom: 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -472,14 +457,13 @@ with tab_matriz:
     else:
         st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote**.")
 
-# PESTAÑA 2: ACTAS OFICIALES (FORMATO EXACTO A LA IMAGEN)
+# PESTAÑA 2: ACTAS OFICIALES (CORREGIDO SIN CÓDIGO HTML VISIBLE)
 with tab_actas:
     if 'df_resultado' in st.session_state and 'meta_actas' in st.session_state:
         meta_list = st.session_state['meta_actas']
         servicios_disponibles = [m['servicio'] for m in meta_list]
         servicios_disponibles_unicos = list(dict.fromkeys(servicios_disponibles))
 
-        # Fila superior de selección de Requisición / Acta y botones de acción
         st.markdown("**Seleccionar Requisición / Acta:**")
         
         c_sel1, c_sel2 = st.columns([3, 1])
@@ -499,13 +483,11 @@ with tab_actas:
                 use_container_width=True
             )
 
-        # Filtrar datos según el servicio elegido
         if servicio_seleccionado != "Ver Todas":
             meta_filtrada = [m for m in meta_list if m['servicio'] == servicio_seleccionado]
         else:
             meta_filtrada = meta_list
 
-        # Renderizar cada Acta en Pantalla con la caja y tabla oficial
         for meta in meta_filtrada:
             p_name = meta['nombre_pdf']
             df_acta = st.session_state['df_resultado'][st.session_state['df_resultado']['PDF Origen'] == p_name]
@@ -514,22 +496,24 @@ with tab_actas:
                 continue
 
             num_alertas = df_acta['Alerta_Rojo'].sum()
-            hora_actual = datetime.datetime.now().strftime("%d/%10/%Y %H:%M")
+            hora_actual = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
 
-            st.markdown(f"""
-                <div class="acta-document-box">
-                    <div class="acta-header-title">HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO</div>
-                    <div class="acta-sub-title">ACTA OFICIAL DE DISPENSACIÓN Y CRUCE DE STOCK (FEFO)<br><span style="font-weight:normal; font-size:12px; color:gray;">Archivo de Origen: {p_name}</span></div>
-                    
-                    <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin-bottom:12px; color:#333;">
-                        <span>SERVICIO SOLICITANTE: <span style="color:#1f4e78;">{meta['servicio']}</span></span>
-                        <span>EMISIÓN: {hora_actual}</span>
-                    </div>
-            """, unsafe_allow_html=True)
+            # Renderizado limpio usando componentes nativos de Streamlit para evitar código plano
+            st.markdown('<div class="acta-document-box">', unsafe_allow_html=True)
+            st.markdown('<div class="acta-header-title">HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="acta-sub-title">ACTA OFICIAL DE DISPENSACIÓN Y CRUCE DE STOCK (FEFO)<br><span style="font-weight:normal; font-size:12px; color:gray;">Archivo de Origen: {p_name}</span></div>', unsafe_allow_html=True)
+
+            col_meta1, col_meta2 = st.columns(2)
+            with col_meta1:
+                st.markdown(f"**SERVICIO SOLICITANTE:** <span style='color:#1f4e78;'>{meta['servicio']}</span>", unsafe_allow_html=True)
+            with col_meta2:
+                st.markdown(f"<div style='text-align: right;'><b>EMISIÓN:</b> {hora_actual}</div>", unsafe_allow_html=True)
+
+            st.markdown("---")
 
             if num_alertas > 0:
                 st.markdown(f"""
-                    <div class="acta-alert-banner">
+                    <div style="background-color: #fde8e4; border: 1px solid #f5c2c7; color: #842029; padding: 10px 15px; border-radius: 6px; font-size: 13px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                         <span>⚠️ Esta acta contiene <b>{num_alertas} ítem(s) con alerta roja</b> (stock insuficiente o sin lote disponible).</span>
                         <span style="font-weight:bold; text-decoration:underline;">Requiere validación de bodega</span>
                     </div>
