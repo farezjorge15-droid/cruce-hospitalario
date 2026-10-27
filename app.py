@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados: Forzar tarjetas con fondo blanco sólido y texto negro oscuro en todos los elementos
+# Estilos CSS avanzados: Transparencia sutil estilo cristal, bordes difuminados y legibilidad óptima
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -42,14 +42,15 @@ st.markdown("""
 
     /* Cabecera Institucional */
     .portal-header {
-        background: linear-gradient(135deg, #0b3c5d 0%, #1d2731 100%);
+        background: linear-gradient(135deg, rgba(11, 60, 93, 0.92) 0%, rgba(29, 39, 49, 0.92) 100%);
         padding: 25px 20px;
-        border-radius: 8px;
+        border-radius: 10px;
         color: white;
         text-align: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.25);
         margin-bottom: 20px;
         border-bottom: 4px solid #328cc1;
+        backdrop-filter: blur(4px);
     }
 
     .portal-title {
@@ -70,73 +71,82 @@ st.markdown("""
         margin-top: 6px;
     }
 
-    /* Recuadros Sólidos Estilo Botón para las Pestañas de Navegación */
+    /* Pestañas de Navegación con transparencia y bordes suaves */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
-        background-color: rgba(255, 255, 255, 0.95);
+        background-color: rgba(255, 255, 255, 0.85);
         padding: 10px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        border: 1px solid #d0d7de;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(6px);
     }
 
     .stTabs [data-baseweb="tab"] {
-        background-color: #1f4e78 !important;
+        background-color: rgba(31, 78, 120, 0.9) !important;
         border-radius: 6px !important;
         color: white !important;
         font-weight: 700 !important;
         padding: 10px 20px !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
     .stTabs [aria-selected="true"] {
-        background-color: #0b3c5d !important;
+        background-color: rgba(11, 60, 93, 0.98) !important;
         border-bottom: 3px solid #66b3ff !important;
     }
 
-    /* Contenedor panel blanco sólido global para textos, radios, toggles y subtítulos flotantes */
+    /* Textos, etiquetas y subtítulos con fondo semitransparente sutil (cristal) */
     p, label, span, .stRadio label, .stCheckbox label, .stToggle label, div[data-testid="stMarkdownContainer"] p {
-        background-color: #ffffff !important;
+        background-color: rgba(255, 255, 255, 0.88) !important;
         color: #111827 !important;
         font-weight: 700 !important;
-        padding: 4px 8px;
-        border-radius: 6px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        border: 1px solid #e5e7eb;
+        padding: 5px 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        border: 1px solid rgba(209, 213, 219, 0.5);
         display: inline-block;
-        margin: 2px 0;
+        margin: 3px 0;
+        backdrop-filter: blur(4px);
     }
 
-    /* Excepciones donde NO queremos fondo blanco en el span para no romper iconos o tablas */
+    /* Excepciones para mantener limpio el diseño en métricas y tablas */
     .stMetric label, .stMetric p, table span, th span, td span, .portal-header span {
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
+        backdrop-filter: none !important;
     }
 
-    .tab-content-box {
-        background-color: #ffffff;
-        border: 1px solid #d0d7de;
-        border-radius: 8px;
+    /* Tarjetas principales y paneles semitransparentes */
+    .tab-content-box, div[data-testid="stExpander"], .acta-document-box {
+        background-color: rgba(255, 255, 255, 0.90) !important;
+        border: 1px solid rgba(209, 213, 219, 0.6) !important;
+        border-radius: 10px !important;
         padding: 25px 30px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.12) !important;
         margin-top: 15px;
         color: #111827;
+        backdrop-filter: blur(8px);
     }
 
     .tab-content-box h2, .tab-content-box h3 {
         color: #0b3c5d;
         font-weight: 800;
         margin-top: 0;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
     }
 
-    /* Tarjetas de Métricas Profesionales con Fondo Sólido */
+    /* Tarjetas de Métricas Profesionales con Cristal Semitransparente */
     div[data-testid="stMetric"] {
-        background-color: #ffffff !important;
-        border: 1px solid #d0d7de !important;
+        background-color: rgba(255, 255, 255, 0.90) !important;
+        border: 1px solid rgba(209, 213, 219, 0.6) !important;
         padding: 15px !important;
-        border-radius: 8px !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1) !important;
+        backdrop-filter: blur(6px);
     }
 
     div[data-testid="stMetric"] label {
@@ -152,15 +162,6 @@ st.markdown("""
         color: #0b3c5d !important;
         font-weight: 800 !important;
         font-size: 24px !important;
-    }
-
-    .acta-document-box {
-        background-color: #ffffff;
-        border: 1px solid #d0d7de;
-        border-radius: 8px;
-        padding: 30px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        margin-top: 15px;
     }
 
     .acta-header-title {
@@ -633,7 +634,7 @@ with tab_actas:
 
             if num_alertas > 0:
                 st.markdown(f"""
-                    <div style="background-color: #fde8e4; border: 1px solid #f5c2c7; color: #842029; padding: 10px 15px; border-radius: 6px; font-size: 13px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="background-color: rgba(253, 232, 228, 0.95); border: 1px solid rgba(245, 194, 199, 0.8); color: #842029; padding: 10px 15px; border-radius: 8px; font-size: 13px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(4px);">
                         <span>⚠️ Esta acta contiene <b>{num_alertas} ítem(s) con alerta roja</b> (stock insuficiente o sin lote disponible).</span>
                         <span style="font-weight:bold; text-decoration:underline;">Requiere validación de bodega</span>
                     </div>
@@ -648,7 +649,7 @@ with tab_actas:
             st.dataframe(df_acta[cols_acta].style.apply(color_acta_rows, axis=1), use_container_width=True, hide_index=True)
 
             st.markdown("""
-                <div style="background-color: #1f4e78; color: white; text-align: center; font-weight: bold; font-size: 12px; padding: 6px; border-radius: 4px; margin-top: 25px; margin-bottom: 15px;">
+                <div style="background-color: #1f4e78; color: white; text-align: center; font-weight: bold; font-size: 12px; padding: 6px; border-radius: 6px; margin-top: 25px; margin-bottom: 15px;">
                     FIRMAS DE CONFORMIDAD Y RESPONSABILIDAD OFICIAL
                 </div>
             """, unsafe_allow_html=True)
@@ -657,21 +658,21 @@ with tab_actas:
             
             if modo_edicion:
                 with f_col1:
-                    st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
+                    st.markdown('<div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">', unsafe_allow_html=True)
                     st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">ELABORÓ / RECIBIDO:</div>', unsafe_allow_html=True)
                     nuevo_elab = st.text_input("Elaboró", value=meta['elaborado_por'], key=f"elab_{idx}", label_visibility="collapsed")
                     st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Servicio Solicitante</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
 
                 with f_col2:
-                    st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
+                    st.markdown('<div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">', unsafe_allow_html=True)
                     st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">ENTREGADO BODEGA:</div>', unsafe_allow_html=True)
                     nuevo_entre = st.text_input("Entregado", value=meta['entregado_por'], key=f"entre_{idx}", label_visibility="collapsed")
                     st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Bodega Central / Farmacia</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
 
                 with f_col3:
-                    st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
+                    st.markdown('<div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">', unsafe_allow_html=True)
                     st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">VALIDÓ / AUTORIZÓ:</div>', unsafe_allow_html=True)
                     nuevo_val = st.text_input("Validó", value=meta['validado_por'], key=f"val_{idx}", label_visibility="collapsed")
                     st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Jefatura / Responsable</div>', unsafe_allow_html=True)
@@ -687,7 +688,7 @@ with tab_actas:
             else:
                 with f_col1:
                     st.markdown(f"""
-                        <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
+                        <div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; text-align: center; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">
                             <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">ELABORÓ / RECIBIDO:</div>
                             <div style="height: 30px;"></div>
                             <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['elaborado_por']}</div>
@@ -696,7 +697,7 @@ with tab_actas:
                     """, unsafe_allow_html=True)
                 with f_col2:
                     st.markdown(f"""
-                        <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
+                        <div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; text-align: center; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">
                             <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">ENTREGADO BODEGA:</div>
                             <div style="height: 30px;"></div>
                             <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['entregado_por']}</div>
@@ -705,7 +706,7 @@ with tab_actas:
                     """, unsafe_allow_html=True)
                 with f_col3:
                     st.markdown(f"""
-                        <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
+                        <div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; text-align: center; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">
                             <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">VALIDÓ / AUTORIZÓ:</div>
                             <div style="height: 30px;"></div>
                             <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['validado_por']}</div>
@@ -735,7 +736,7 @@ with tab_ayuda:
     st.markdown("""
         <div class="tab-content-box">
             <h2>💡 Plantillas y Ayuda del Sistema</h2>
-            <hr style="border: 0; border-top: 1px solid #d0d7de; margin-bottom: 20px;">
+            <hr style="border: 0; border-top: 1px solid rgba(208, 215, 222, 0.6); margin-bottom: 20px;">
             <ul>
                 <li><b>Paso 1:</b> Suba sus archivos PDF con los pedidos de requisición de los diferentes servicios hospitalarios.</li>
                 <li><b>Paso 2:</b> Cargue el Excel de existencias por lote y fecha de caducidad (<code>F. Cad</code>).</li>
