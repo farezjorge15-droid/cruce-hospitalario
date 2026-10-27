@@ -74,14 +74,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Encabezado Superior Estilizado
+# Encabezado Superior con el Nombre Completo del Hospital en Negrita y Subtítulo solicitado
 st.markdown("""
     <div class="top-nav-container">
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 20px;">🏥</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 24px;">🏥</span>
             <div>
-                <strong>Cruce Hospitalario FEFO</strong><br>
-                <span style="font-size: 11px; color: gray;">Hospital Provincial General Docente Vicente Corral Moscoso • Bodega & Farmacia</span>
+                <strong style="font-size: 15px; color: #1f4e78;">HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO</strong><br>
+                <span style="font-size: 11px; color: gray;">Cruce Hospitalario FEFO • Bodega & Farmacia</span>
             </div>
         </div>
     </div>
@@ -497,7 +497,6 @@ with tab_actas:
                 use_container_width=True
             )
 
-        # HORA EXACTA LOCAL DE ECUADOR
         hora_emision_ec = obtener_hora_ecuador()
 
         for idx, meta in enumerate(meta_list):
