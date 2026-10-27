@@ -12,7 +12,7 @@ from reportlab.lib import colors
 import io
 import datetime
 
-# Configuración inicial de Streamlit
+# Configuración inicial de la página
 st.set_page_config(
     page_title="Cruce Hospitalario FEFO - Hospital Vicente Corral Moscoso",
     page_icon="🏥",
@@ -20,86 +20,63 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados para la interfaz institucional
+# Estilos CSS para emular el diseño moderno de la interfaz de AI Studio
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    .stApp { background-color: #f8f9fa; }
     
-    .stApp {
-        background-color: #f4f7f6;
-    }
-
-    .header-box {
-        background: linear-gradient(135deg, #0f4c81 0%, #1b365d 100%);
-        padding: 20px 30px;
-        border-radius: 14px;
-        color: white;
-        margin-bottom: 25px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.12);
-    }
-    
-    .hospital-title {
-        font-size: 23px;
-        font-weight: 800;
-        margin: 0;
-        color: #ffffff;
-        letter-spacing: 0.3px;
-        text-transform: uppercase;
+    .top-header {
+        background: white;
+        padding: 15px 25px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
     }
     
-    .sub-title {
-        font-size: 13px;
-        color: #b0bec5;
-        margin-top: 6px;
-        font-weight: 500;
-    }
-
-    .upload-card-header {
-        background-color: #ffffff;
-        padding: 15px 20px;
-        border-radius: 12px 12px 0 0;
-        border-bottom: 2px solid #0f4c81;
-        font-weight: bold;
-        font-size: 16px;
-        color: #0f4c81;
-        margin-bottom: 10px;
+    .metric-card {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border-top: 4px solid #1f4e78;
+        text-align: center;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# ENCABEZADO INSTITUCIONAL CON COLUMNAS NATIVAS PARA ASEGURAR LA CARGA DEL LOGO
-with st.container():
-    st.markdown('<div class="header-box">', unsafe_allow_html=True)
-    col_h1, col_h2 = st.columns([6, 1])
-    with col_h1:
-        st.markdown("""
-            <h1 class="hospital-title">HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO</h1>
-            <p class="sub-title">Sistema de Cruce FEFO y Lotes — Bodega y Farmacia</p>
-        """, unsafe_allow_html=True)
-    with col_h2:
-        # Usamos st.image nativo para evitar bloqueos de enlaces externos en HTML
-        st.image("https://upload.wikimedia.org/wikipedia/commons/8/8c/Escudo_de_Ecuador_%28oficial%29.svg", width=85)
-    st.markdown('</div>', unsafe_allow_html=True)
+# Encabezado principal limpio
+st.markdown("""
+    <div class="top-header">
+        <div>
+            <h3 style="margin:0; color:#1f4e78;">🏥 Cruce Hospitalario FEFO</h3>
+            <p style="margin:0; font-size:13px; color:gray;">Hospital Provincial General Docente Vicente Corral Moscoso • Bodega & Farmacia</p>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
-st.write("")
-
-# SECCIÓN DE CARGA EN 3 COLUMNAS LIMPIAS
+# Sección de Carga de Archivos en 3 columnas
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown('<div class="upload-card-header">📄 1. Requisiciones PDF</div>', unsafe_allow_html=True)
-    uploaded_pdfs = st.file_uploader("Seleccione o arrastre los PDFs de pedidos", type=["pdf"], accept_multiple_files=True, key="pdf_up")
+    st.markdown("### 📄 1. Requisiciones PDF")
+    uploaded_pdfs = st.file_uploader("Subir PDFs de pedidos", type=["pdf"], accept_multiple_files=True, key="pdf_up")
 
 with col2:
-    st.markdown('<div class="upload-card-header">📊 2. Excel de Lotes</div>', unsafe_allow_html=True)
-    uploaded_lotes = st.file_uploader("Subir reporte de lotes y caducidades", type=["xlsx", "xls"], key="lotes_up")
+    st.markdown("### 📊 2. Excel de Lotes")
+    uploaded_lotes = st.file_uploader("Subir reporte de lotes", type=["xlsx", "xls"], key="lotes_up")
 
 with col3:
-    st.markdown('<div class="upload-card-header">📦 3. Stock General</div>', unsafe_allow_html=True)
-    uploaded_unificado = st.file_uploader("Subir stock unificado de bodega", type=["xlsx", "xls"], key="unif_up")
+    st.markdown("### 📦 3. Stock General")
+    uploaded_unificado = st.file_uploader("Subir stock unificado", type=["xlsx", "xls"], key="unif_up")
 
-# LÓGICA DE PROCESAMIENTO
+st.markdown("---")
+
+# Lógica de procesamiento y cruce
 def cargar_excel_seguro(file_bytes):
     try:
         return pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
@@ -283,8 +260,9 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
 
     df_final = pd.DataFrame(todos_los_resultados)
     if df_final.empty:
-        return None, None
+        return None, None, 0, 0, 0, 0
 
+    # Generar Excel
     output_excel = io.BytesIO()
     wb = Workbook()
     ws = wb.active
@@ -328,6 +306,7 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     wb.save(output_excel)
     output_excel.seek(0)
 
+    # Generar PDF
     output_pdf = io.BytesIO()
     doc = SimpleDocTemplate(output_pdf, pagesize=letter, rightMargin=18, leftMargin=18, topMargin=20, bottomMargin=20)
     elements = []
@@ -410,27 +389,79 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
 
     doc.build(elements)
     output_pdf.seek(0)
-    return output_excel.getvalue(), output_pdf.getvalue()
+    
+    # Calcular métricas para las tarjetas inferiores
+    total_req = len(lista_pdfs)
+    total_items = len(df_final)
+    cant_aprobada = int(df_final['Cant. Aprobada'].sum())
+    alertas = int(df_final['Alerta_Rojo'].sum())
 
-# BOTÓN DE EJECUCIÓN MEJORADO
-st.markdown("<br>", unsafe_allow_html=True)
-col_b1, col_b2, col_b3 = st.columns([1, 2, 1])
+    return output_excel.getvalue(), output_pdf.getvalue(), total_req, total_items, cant_aprobada, alertas, df_final
 
-with col_b2:
-    if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
-        if st.button("🚀 Ejecutar Cruce FEFO en Lote", type="primary", use_container_width=True):
-            with st.spinner("Procesando datos institucionales..."):
-                lista_tuplas_pdfs = [(p.name, p.read()) for p in uploaded_pdfs]
-                excel_bytes = uploaded_lotes.read()
-                unif_bytes = uploaded_unificado.read()
+# Botón principal de ejecución
+if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
+    if st.button("🚀 Ejecutar Cruce FEFO en Lote", type="primary", use_container_width=True):
+        with st.spinner("Procesando datos institucionales..."):
+            lista_tuplas_pdfs = [(p.name, p.read()) for p in uploaded_pdfs]
+            excel_bytes = uploaded_lotes.read()
+            unif_bytes = uploaded_unificado.read()
+            
+            res_excel, res_pdf, req_n, items_n, cant_ap_n, alertas_n, df_resultado = procesar_cruce_hospitalario_lote(lista_tuplas_pdfs, excel_bytes, unif_bytes)
+            
+            if res_excel:
+                st.success("¡Cruce FEFO completado exitosamente!")
                 
-                res_excel, res_pdf = procesar_cruce_hospitalario_lote(lista_tuplas_pdfs, excel_bytes, unif_bytes)
-                
-                if res_excel:
-                    st.success("¡Cruce FEFO completado exitosamente!")
-                    st.download_button("📥 Descargar Excel Consolidado", data=res_excel, file_name="Consolidado_FEFO.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
-                    st.download_button("📥 Descargar Actas Oficiales en PDF", data=res_pdf, file_name="Actas_Oficiales.pdf", mime="application/pdf", use_container_width=True)
-                else:
-                    st.error("No se pudieron extraer datos válidos de las requisiciones o no hubo coincidencia de productos.")
-    else:
-        st.info("ℹ️ Cargue los archivos solicitados arriba para habilitar la ejecución.")
+                # GUARDAR EN SESSION STATE PARA LAS PESTAÑAS
+                st.session_state['res_excel'] = res_excel
+                st.session_state['res_pdf'] = res_pdf
+                st.session_state['df_resultado'] = df_resultado
+                st.session_state['req_n'] = req_n
+                st.session_state['items_n'] = items_n
+                st.session_state['cant_ap_n'] = cant_ap_n
+                st.session_state['alertas_n'] = alertas_n
+            else:
+                st.error("No se pudieron extraer datos válidos de las requisiciones.")
+else:
+    st.info("ℹ️ Cargue los tres archivos requeridos en la parte superior para habilitar el procesamiento.")
+
+# SI YA SE PROCESÓ, MOSTRAR MÉTRICAS Y PESTAÑAS IDÉNTICAS A AI STUDIO
+if 'res_excel' in st.session_state:
+    st.markdown("---")
+    
+    # TARJETAS DE MÉTRICAS (Estilo AI Studio)
+    m1, m2, m3, m4, m5, m6 = st.columns(6)
+    with m1:
+        st.metric(label="Requisiciones", value=st.session_state['req_n'])
+    with m2:
+        st.metric(label="Ítems Solicitados", value=st.session_state['items_n'])
+    with m3:
+        st.metric(label="Cant. Aprobada", value=st.session_state['cant_ap_n'])
+    with m4:
+        st.metric(label="Despacho con Lote", value=st.session_state['items_n'] - st.session_state['alertas_n'])
+    with m5:
+        st.metric(label="Alertas / Faltante", value=st.session_state['alertas_n'])
+    with m6:
+        cobertura = ((st.session_state['items_n'] - st.session_state['alertas_n']) / st.session_state['items_n'] * 100) if st.session_state['items_n'] > 0 else 0
+        st.metric(label="Cobertura FEFO", value=f"{cobertura:.1f}%")
+
+    st.markdown("---")
+
+    # PESTAÑAS DE NAVEGACIÓN SUPERIOR (Matriz, Actas, Lotes, Descargas)
+    tab1, tab2, tab3 = st.tabs(["📋 Matriz Consolidada", "📑 Actas Oficiales (PDF)", "📥 Descargas Directas"])
+
+    with tab1:
+        st.subheader("Matriz Consolidada de Cruce FEFO")
+        st.dataframe(st.session_state['df_resultado'], use_container_width=True)
+
+    with tab2:
+        st.subheader("Vista Previa y Generación de Actas Oficiales")
+        st.write("Las actas oficiales están listas para ser descargadas con las firmas institucionales correspondientes.")
+        st.download_button("📥 Descargar Actas en PDF", data=st.session_state['res_pdf'], file_name="Actas_Oficiales.pdf", mime="application/pdf", use_container_width=True)
+
+    with tab3:
+        st.subheader("Centro de Descargas")
+        col_d1, col_d2 = st.columns(2)
+        with col_d1:
+            st.download_button("📊 Descargar Excel Consolidado", data=st.session_state['res_excel'], file_name="Consolidado_FEFO.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        with col_d2:
+            st.download_button("📑 Descargar Actas Oficiales en PDF", data=st.session_state['res_pdf'], file_name="Actas_Oficiales.pdf", mime="application/pdf", use_container_width=True)
