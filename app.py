@@ -13,7 +13,7 @@ import io
 import datetime
 import zoneinfo
 
-# Definir la zona horaria oficial de Ecuador (Guayaquil/Cuenca UTC-5)
+# Zona horaria oficial de Ecuador (Guayaquil/Cuenca UTC-5)
 TZ_ECUADOR = zoneinfo.ZoneInfo("America/Guayaquil")
 
 def obtener_hora_ecuador():
@@ -27,23 +27,41 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados para replicar exactamente la interfaz
+# Estilos CSS institucionales y profesionales para Gerencia
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    .stApp { background-color: #f8f9fa; }
+    .stApp { background-color: #f4f6f9; }
 
-    .top-nav-container {
-        background: #ffffff;
-        padding: 12px 20px;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 20px;
-        border: 1px solid #e0e0e0;
+    /* Estilo Gerencial del Banner Superior */
+    .gerencia-header {
+        background: linear-gradient(135deg, #1f4e78 0%, #112d4e 100%);
+        padding: 30px 20px;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        margin-bottom: 25px;
+        border-bottom: 4px solid #00b4d8;
+    }
+
+    .gerencia-title {
+        font-size: 24px;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin: 0;
+        color: #ffffff;
+    }
+
+    .gerencia-subtitle {
+        font-size: 13px;
+        font-weight: 400;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: #90e0ef;
+        margin-top: 8px;
     }
 
     .acta-document-box {
@@ -74,16 +92,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Encabezado Superior con el Nombre Completo del Hospital en Negrita y Subtítulo solicitado
+# Banner Principal Institucional para Gerencia (Centrado y en Grande)
 st.markdown("""
-    <div class="top-nav-container">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 24px;">🏥</span>
-            <div>
-                <strong style="font-size: 15px; color: #1f4e78;">HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO</strong><br>
-                <span style="font-size: 11px; color: gray;">Cruce Hospitalario FEFO • Bodega & Farmacia</span>
-            </div>
-        </div>
+    <div class="gerencia-header">
+        <div style="font-size: 32px; margin-bottom: 5px;">🏥</div>
+        <h1 class="gerencia-title">Hospital Provincial General Docente Vicente Corral Moscoso</h1>
+        <div class="gerencia-subtitle">Sistema Automatizado de Cruce Hospitalario FEFO • Bodega & Farmacia</div>
     </div>
 """, unsafe_allow_html=True)
 
