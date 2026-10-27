@@ -457,7 +457,7 @@ with tab_matriz:
     else:
         st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote**.")
 
-# PESTAÑA 2: ACTAS OFICIALES (CON BLOQUE DE FIRMAS OFICIAL INCLUIDO)
+# PESTAÑA 2: ACTAS OFICIALES (CON CAMPOS EDITABLES DE FIRMAS)
 with tab_actas:
     if 'df_resultado' in st.session_state and 'meta_actas' in st.session_state:
         meta_list = st.session_state['meta_actas']
@@ -488,7 +488,7 @@ with tab_actas:
         else:
             meta_filtrada = meta_list
 
-        for meta in meta_filtrada:
+        for idx, meta in enumerate(meta_filtrada):
             p_name = meta['nombre_pdf']
             df_acta = st.session_state['df_resultado'][st.session_state['df_resultado']['PDF Origen'] == p_name]
             
@@ -526,61 +526,36 @@ with tab_actas:
             cols_acta = ['Nro.', 'Código', 'Dispositivo Médico', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock Bodega']
             st.dataframe(df_acta[cols_acta].style.apply(color_acta_rows, axis=1), use_container_width=True, hide_index=True)
 
-            # BLOQUE DE FIRMAS OFICIAL IDÉNTICO A LA REFERENCIA
+            # BLOQUE DE FIRMAS OFICIAL CON CAMPOS EDITABLES PARA DIGITAR NOMBRES
             st.markdown("""
                 <div style="background-color: #1f4e78; color: white; text-align: center; font-weight: bold; font-size: 12px; padding: 6px; border-radius: 4px; margin-top: 25px; margin-bottom: 15px;">
-                    FIRMAS DE CONFORMIDAD Y RESPONSABILIDAD OFICIAL
+                    FIRMAS DE CONFORMIDAD Y RESPONSABILIDAD OFICIAL (EDITABLES)
                 </div>
             """, unsafe_allow_html=True)
 
             f_col1, f_col2, f_col3 = st.columns(3)
             with f_col1:
-                st.markdown(f"""
-                    <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
-                        <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">ELABORÓ / RECIBIDO:</div>
-                        <div style="height: 40px;"></div>
-                        <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['elaborado_por']}</div>
-                        <div style="font-size: 10px; color: gray;">Servicio Solicitante</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
+                st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">ELABORÓ / RECIBIDO:</div>', unsafe_allow_html=True)
+                nuevo_elab = st.text_input("Nombre Elaboró / Recibido", value=meta['elaborado_por'], key=f"elab_{idx}", label_visibility="collapsed")
+                st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Servicio Solicitante</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
             with f_col2:
-                st.markdown(f"""
-                    <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
-                        <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">ENTREGADO BODEGA:</div>
-                        <div style="height: 40px;"></div>
-                        <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['entregado_por']}</div>
-                        <div style="font-size: 10px; color: gray;">Bodega Central / Farmacia</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
+                st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">ENTREGADO BODEGA:</div>', unsafe_allow_html=True)
+                nuevo_entre = st.text_input("Nombre Entregado Bodega", value=meta['entregado_por'], key=f"entre_{idx}", label_visibility="collapsed")
+                st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Bodega Central / Farmacia</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
             with f_col3:
-                st.markdown(f"""
-                    <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
-                        <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">VALIDÓ / AUTORIZÓ:</div>
-                        <div style="height: 40px;"></div>
-                        <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['validado_por']}</div>
-                        <div style="font-size: 10px; color: gray;">Jefatura / Responsable</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
+                st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">VALIDÓ / AUTORIZÓ:</div>', unsafe_allow_html=True)
+                nuevo_val = st.text_input("Nombre Validó / Autorizó", value=meta['validado_por'], key=f"val_{idx}", label_visibility="collapsed")
+                st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Jefatura / Responsable</div>', unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown("</div><br>", unsafe_allow_html=True)
-
-    else:
-        st.info("ℹ️ Ejecute el cruce FEFO para visualizar el formato interactivo de las Actas Oficiales.")
-
-# PESTAÑA 3: LOTES Y CADUCIDADES
-with tab_lotes:
-    st.subheader("📊 Lotes y Caducidades Registradas")
-    if 'df_resultado' in st.session_state:
-        st.dataframe(st.session_state['df_resultado'][['Nro.', 'PDF Origen', 'Servicio', 'Dispositivo Médico', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad']], use_container_width=True, hide_index=True)
-    else:
-        st.info("Cargue los archivos para ver la distribución de lotes y fechas de caducidad.")
-
-# PESTAÑA 4: PLANTILLAS Y AYUDA
-with tab_ayuda:
-    st.subheader("💡 Plantillas y Ayuda del Sistema")
-    st.markdown("""
-    * **Paso 1:** Suba sus archivos PDF con los pedidos de requisición de los diferentes servicios hospitalarios.
-    * **Paso 2:** Cargue el Excel de existencias por lote y fecha de caducidad (`F. Cad`).
-    * **Paso 3:** Cargue el archivo Excel unificado de stock general de bodega o farmacia.
-    * **Paso 4:** Presione el botón **Ejecutar Cruce FEFO en Lote** para consolidar automáticamente todo el sistema con el formato oficial.
-    """)
+            # Actualizar nombres en tiempo real si el usuario digita nuevos datos
+            meta_list[idx]['elaborado_por'] = nuevo_elab
+            meta_list[idx]['entregado_por'] = nuevo_entre
+            meta
