@@ -12,7 +12,6 @@ from reportlab.lib import colors
 import io
 import datetime
 import zoneinfo
-import base64
 
 # Zona horaria oficial de Ecuador (Guayaquil/Cuenca UTC-5)
 TZ_ECUADOR = zoneinfo.ZoneInfo("America/Guayaquil")
@@ -28,49 +27,22 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Módulo de Carga en Lote (Definido primero para capturar la imagen de fondo si se sube)
-with st.expander("📂 Módulo de Carga en Lote & Configuración Visual", expanded=True):
-    col_up1, col_up2, col_up3, col_up4 = st.columns(4)
-    with col_up1:
-        uploaded_pdfs = st.file_uploader("1. Requisiciones PDF (Lote)", type=["pdf"], accept_multiple_files=True, key="pdf_up")
-    with col_up2:
-        uploaded_lotes = st.file_uploader("2. Excel de Lotes y F. Cad", type=["xlsx", "xls"], key="lotes_up")
-    with col_up3:
-        uploaded_unificado = st.file_uploader("3. Excel Unificado (Stock General)", type=["xlsx", "xls"], key="unif_up")
-    with col_up4:
-        uploaded_bg = st.file_uploader("4. Imagen de Fondo (Hospital)", type=["jpg", "jpeg", "png"], key="bg_up")
-
-# Procesar imagen de fondo personalizada si el usuario la subió
-background_css = ""
-if uploaded_bg:
-    bg_bytes = uploaded_bg.read()
-    bg_base64 = base64.b64encode(bg_bytes).decode("utf-8")
-    background_css = f"""
-    .stApp {{
-        background-image: linear-gradient(rgba(15, 23, 42, 0.78), rgba(15, 23, 42, 0.85)), 
-                          url('data:image/jpeg;base64,{bg_base64}');
+# Estilos CSS con la imagen permanente del hospital de fondo y diseño gerencial impecable
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    .stApp {
+        background-image: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.88)), 
+                          url('https://upload.wikimedia.org/wikipedia/commons/4/4b/Hospital_Vicente_Corral_Moscoso%2C_Cuenca.jpg');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
-    }}
-    """
-else:
-    background_css = """
-    .stApp {{
-        background-color: #f4f6f9;
-    }}
-    """
-
-# Estilos CSS avanzados con la imagen de fondo dinámica y diseño gerencial
-st.markdown(f"""
-    <style>
-    #MainMenu {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
-    
-    {background_css}
+    }
 
     /* Estilo de Cabecera Institucional Tipo Portal Oficial */
-    .portal-header {{
+    .portal-header {
         background: linear-gradient(135deg, #0b3c5d 0%, #1d2731 100%);
         padding: 25px 20px;
         border-radius: 8px;
@@ -79,72 +51,72 @@ st.markdown(f"""
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         margin-bottom: 20px;
         border-bottom: 4px solid #328cc1;
-    }}
+    }
 
-    .portal-title {{
+    .portal-title {
         font-size: 26px;
         font-weight: 800;
         letter-spacing: 0.5px;
         text-transform: uppercase;
         margin: 0;
         color: #ffffff;
-    }}
+    }
 
-    .portal-subtitle {{
+    .portal-subtitle {
         font-size: 13px;
         font-weight: 500;
         letter-spacing: 2px;
         text-transform: uppercase;
         color: #66b3ff;
         margin-top: 6px;
-    }}
+    }
 
     /* Tarjetas de Métricas Profesionales con Fondo Sólido para Alta Visibilidad */
-    div[data-testid="stMetric"] {{
+    div[data-testid="stMetric"] {
         background-color: #ffffff !important;
         border: 1px solid #d0d7de !important;
         padding: 15px !important;
         border-radius: 8px !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
-    }}
+    }
 
-    div[data-testid="stMetric"] label {{
+    div[data-testid="stMetric"] label {
         color: #1f4e78 !important;
         font-weight: 700 !important;
         font-size: 13px !important;
-    }}
+    }
 
-    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {{
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #0b3c5d !important;
         font-weight: 800 !important;
         font-size: 24px !important;
-    }}
+    }
 
-    .acta-document-box {{
+    .acta-document-box {
         background-color: rgba(255, 255, 255, 0.97);
         border: 1px solid #d0d7de;
         border-radius: 8px;
         padding: 30px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         margin-top: 15px;
-    }}
+    }
 
-    .acta-header-title {{
+    .acta-header-title {
         color: #1f4e78;
         font-weight: 800;
         font-size: 18px;
         text-align: center;
         margin-bottom: 2px;
         text-transform: uppercase;
-    }}
+    }
 
-    .acta-sub-title {{
+    .acta-sub-title {
         color: #1f4e78;
         font-weight: 700;
         font-size: 14px;
         text-align: center;
         margin-bottom: 15px;
-    }}
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -164,6 +136,16 @@ tab_matriz, tab_actas, tab_lotes, tab_ayuda = st.tabs([
     "Lotes y Caducidades", 
     "Plantillas y Ayuda"
 ])
+
+# Módulo de Carga en Lote (Limpio, solo con los 3 archivos necesarios)
+with st.expander("📂 Módulo de Carga en Lote (Requisiciones & Inventarios)", expanded=True):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        uploaded_pdfs = st.file_uploader("1. Requisiciones PDF (Lote)", type=["pdf"], accept_multiple_files=True, key="pdf_up")
+    with col2:
+        uploaded_lotes = st.file_uploader("2. Excel de Lotes y F. Cad", type=["xlsx", "xls"], key="lotes_up")
+    with col3:
+        uploaded_unificado = st.file_uploader("3. Excel Unificado (Stock General)", type=["xlsx", "xls"], key="unif_up")
 
 # Funciones de procesamiento seguro y lógica FEFO
 def cargar_excel_seguro(file_bytes):
@@ -685,6 +667,5 @@ with tab_ayuda:
     * **Paso 1:** Suba sus archivos PDF con los pedidos de requisición de los diferentes servicios hospitalarios.
     * **Paso 2:** Cargue el Excel de existencias por lote y fecha de caducidad (`F. Cad`).
     * **Paso 3:** Cargue el archivo Excel unificado de stock general de bodega o farmacia.
-    * **Paso 4:** Suba la foto de la fachada del hospital en el selector de fondo.
-    * **Paso 5:** Presione el botón **Ejecutar Cruce FEFO en Lote** para consolidar automáticamente todo el sistema con el formato oficial.
+    * **Paso 4:** Presione el botón **Ejecutar Cruce FEFO en Lote** para consolidar automáticamente todo el sistema con el formato oficial.
     """)
