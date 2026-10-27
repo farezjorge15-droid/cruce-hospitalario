@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS con la imagen exacta solicitada de fondo (sin oscurecer) y diseño gerencial
+# Estilos CSS avanzados con recuadros sólidos para pestañas y textos para garantizar legibilidad total
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -70,7 +70,31 @@ st.markdown("""
         margin-top: 6px;
     }
 
-    /* Tarjetas de Métricas Profesionales con Fondo Sólido para Alta Visibilidad */
+    /* Recuadros Sólidos Estilo Botón para las Pestañas de Navegación */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: rgba(255, 255, 255, 0.92);
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        border: 1px solid #d0d7de;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background-color: #1f4e78 !important;
+        border-radius: 6px !important;
+        color: white !important;
+        font-weight: 700 !important;
+        padding: 10px 20px !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #0b3c5d !important;
+        border-bottom: 3px solid #66b3ff !important;
+    }
+
+    /* Tarjetas de Métricas Profesionales con Fondo Sólido */
     div[data-testid="stMetric"] {
         background-color: #ffffff !important;
         border: 1px solid #d0d7de !important;
@@ -89,6 +113,15 @@ st.markdown("""
         color: #0b3c5d !important;
         font-weight: 800 !important;
         font-size: 24px !important;
+    }
+
+    /* Contenedores informativos con fondo sólido para total visibilidad */
+    .stAlert {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        color: #0b3c5d !important;
+        font-weight: 600;
+        border: 1px solid #d0d7de;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
 
     .acta-document-box {
@@ -128,12 +161,12 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Pestañas Superiores de Navegación
+# Pestañas Superiores de Navegación (Estilizadas como Botones Profesionales)
 tab_matriz, tab_actas, tab_lotes, tab_ayuda = st.tabs([
-    "Matriz Consolidada", 
-    "Actas Oficiales", 
-    "Lotes y Caducidades", 
-    "Plantillas y Ayuda"
+    "📊 Matriz Consolidada", 
+    "📋 Actas Oficiales", 
+    "📦 Lotes y Caducidades", 
+    "💡 Plantillas y Ayuda"
 ])
 
 # Módulo de Carga en Lote
