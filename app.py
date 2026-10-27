@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS con formato de paneles, recuadros de colores institucionales y fondo de la catedral
+# Estilos CSS con fondo de la catedral de Cuenca y diseño gerencial limpio
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -71,20 +71,6 @@ st.markdown("""
         margin-top: 6px;
     }
 
-    /* Bloques de Acceso Rápido Tipo Portal */
-    .menu-grid {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 25px;
-    }
-
-    .menu-card-1 { background-color: #004b87; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-    .menu-card-2 { background-color: #0066b2; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-    .menu-card-3 { background-color: #0080ff; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-    .menu-card-4 { background-color: #0099ff; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-    .menu-card-5 { background-color: #1a8cff; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-    .menu-card-6 { background-color: #003366; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-
     .acta-document-box {
         background-color: rgba(255, 255, 255, 0.97);
         border: 1px solid #d0d7de;
@@ -122,19 +108,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Barra de Accesos Rápidos Dividida en Recuadros de Colores (Estilo Portal Oficial)
-st.markdown("""
-    <div class="menu-grid">
-        <div class="menu-card-1">📅 Módulo de Requisiciones PDF</div>
-        <div class="menu-card-2">🧪 Matriz Consolidada FEFO</div>
-        <div class="menu-card-3">📊 Control de Lotes y Caducidades</div>
-        <div class="menu-card-4">📋 Actas Oficiales y Firmas</div>
-        <div class="menu-card-5">📥 Exportación de Reportes</div>
-        <div class="menu-card-6">💡 Ayuda Institucional</div>
-    </div>
-""", unsafe_allow_html=True)
-
-# Pestañas Superiores de Navegación
+# Pestañas Superiores de Navegación (Funcionales)
 tab_matriz, tab_actas, tab_lotes, tab_ayuda = st.tabs([
     "Matriz Consolidada", 
     "Actas Oficiales", 
