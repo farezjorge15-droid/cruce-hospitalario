@@ -1,0 +1,6 @@
+pypdf
+pandas
+openpyxl
+reportlab
+streamlit
+xlrd
