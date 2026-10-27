@@ -20,63 +20,36 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS para emular el diseño moderno de la interfaz de AI Studio
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stApp { background-color: #f8f9fa; }
-    
-    .top-header {
-        background: white;
-        padding: 15px 25px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 20px;
-    }
-    
-    .metric-card {
-        background: white;
-        padding: 15px;
-        border-radius: 10px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        border-top: 4px solid #1f4e78;
-        text-align: center;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# Encabezado principal limpio
-st.markdown("""
-    <div class="top-header">
-        <div>
-            <h3 style="margin:0; color:#1f4e78;">🏥 Cruce Hospitalario FEFO</h3>
-            <p style="margin:0; font-size:13px; color:gray;">Hospital Provincial General Docente Vicente Corral Moscoso • Bodega & Farmacia</p>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+# Encabezado superior institucional
+st.markdown("### 🏥 Cruce Hospitalario FEFO - Hospital Vicente Corral Moscoso")
 
-# Sección de Carga de Archivos en 3 columnas
-col1, col2, col3 = st.columns(3)
+# PESTAÑAS SUPERIORES IDÉNTICAS A LA INTERFAZ DE LA IMAGEN
+tab_matriz, tab_actas, tab_lotes, tab_ayuda = st.tabs([
+    "Matriz Consolidada", 
+    "Actas Oficiales", 
+    "Lotes y Caducidades", 
+    "Plantillas y Ayuda"
+])
 
-with col1:
-    st.markdown("### 📄 1. Requisiciones PDF")
-    uploaded_pdfs = st.file_uploader("Subir PDFs de pedidos", type=["pdf"], accept_multiple_files=True, key="pdf_up")
+# MÓDULO DE CARGA EN LOTE (Siempre disponible)
+with st.expander("📂 Módulo de Carga en Lote (Requisiciones & Inventarios)", expanded=True):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        uploaded_pdfs = st.file_uploader("1. Requisiciones PDF (Lote)", type=["pdf"], accept_multiple_files=True, key="pdf_up")
+    with col2:
+        uploaded_lotes = st.file_uploader("2. Excel de Lotes y F. Cad", type=["xlsx", "xls"], key="lotes_up")
+    with col3:
+        uploaded_unificado = st.file_uploader("3. Excel Unificado (Stock General)", type=["xlsx", "xls"], key="unif_up")
 
-with col2:
-    st.markdown("### 📊 2. Excel de Lotes")
-    uploaded_lotes = st.file_uploader("Subir reporte de lotes", type=["xlsx", "xls"], key="lotes_up")
-
-with col3:
-    st.markdown("### 📦 3. Stock General")
-    uploaded_unificado = st.file_uploader("Subir stock unificado", type=["xlsx", "xls"], key="unif_up")
-
-st.markdown("---")
-
-# Lógica de procesamiento y cruce
+# Funciones de procesamiento seguro
 def cargar_excel_seguro(file_bytes):
     try:
         return pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
@@ -203,10 +176,10 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                         'Código': str(codigo),
                         'SKU': sku,
                         'Dispositivo Médico': pdf_row['Dispositivo Médico'],
-                        'Cant. Solicitada': pdf_row['Cantidades Solicitadas'],
-                        'Cant. Aprobada': pdf_row['Cantidades Aprobadas'],
+                        'Cant. Sol.': pdf_row['Cantidades Solicitadas'],
+                        'Cant. Ap.': pdf_row['Cantidades Aprobadas'],
                         'Lotes y Cantidades a Despachar': 'SIN LOTE DISPONIBLE (0 unids)',
-                        'Fechas de Caducidad': 'S/F',
+                        'Fechas Caducidad': 'S/F',
                         'Stock Bodega': float(stock_bodega),
                         'Alerta_Rojo': True
                     }
@@ -241,10 +214,10 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                         'Código': str(codigo),
                         'SKU': sku,
                         'Dispositivo Médico': pdf_row['Dispositivo Médico'],
-                        'Cant. Solicitada': pdf_row['Cantidades Solicitadas'],
-                        'Cant. Aprobada': pdf_row['Cantidades Aprobadas'],
+                        'Cant. Sol.': pdf_row['Cantidades Solicitadas'],
+                        'Cant. Ap.': pdf_row['Cantidades Aprobadas'],
                         'Lotes y Cantidades a Despachar': " / ".join(lotes_info),
-                        'Fechas de Caducidad': " / ".join(fechas_info),
+                        'Fechas Caducidad': " / ".join(fechas_info),
                         'Stock Bodega': float(stock_bodega),
                         'Alerta_Rojo': False
                     }
@@ -260,24 +233,18 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
 
     df_final = pd.DataFrame(todos_los_resultados)
     if df_final.empty:
-        return None, None, 0, 0, 0, 0
+        return None, None, 0, 0, 0, 0, None
 
-    # Generar Excel
+    # Excel output
     output_excel = io.BytesIO()
     wb = Workbook()
     ws = wb.active
     ws.title = "Consolidado Lote FEFO"
-
-    headers = ['PDF Origen', 'Servicio', 'Nro.', 'Código', 'SKU', 'Dispositivo Médico', 'Cant. Solicitada', 'Cant. Aprobada', 'Lotes y Cantidades a Despachar', 'Fechas de Caducidad', 'Stock Bodega']
+    headers = ['PDF Origen', 'Servicio', 'Nro.', 'Código', 'SKU', 'Dispositivo Médico', 'Cant. Sol.', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock Bodega']
     ws.append(headers)
-
+    
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
     header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-    red_fill = PatternFill(start_color="FCE4D6", end_color="FCE4D6", fill_type="solid")
-    red_font = Font(name="Calibri", size=11, bold=True, color="C00000")
-    normal_font = Font(name="Calibri", size=11)
-    border_thin = Border(left=Side(style='thin', color='D9D9D9'), right=Side(style='thin', color='D9D9D9'), top=Side(style='thin', color='D9D9D9'), bottom=Side(style='thin', color='D9D9D9'))
-
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col_num)
         cell.fill = header_fill
@@ -285,32 +252,18 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         cell.alignment = Alignment(horizontal='center', vertical='center')
 
     for r_idx, row in df_final.iterrows():
-        row_data = [
+        ws.append([
             row['PDF Origen'], row['Servicio'], row['Nro.'], row['Código'], row['SKU'], 
-            row['Dispositivo Médico'], row['Cant. Solicitada'], row['Cant. Aprobada'], 
-            row['Lotes y Cantidades a Despachar'], row['Fechas de Caducidad'], row['Stock Bodega']
-        ]
-        ws.append(row_data)
-        current_row = r_idx + 2
-        is_zero_stock = row['Alerta_Rojo'] or (row['Stock Bodega'] <= 0)
-        
-        for col_num in range(1, len(headers) + 1):
-            cell = ws.cell(row=current_row, column=col_num)
-            cell.border = border_thin
-            if is_zero_stock:
-                cell.fill = red_fill
-                cell.font = red_font
-            else:
-                cell.font = normal_font
-
+            row['Dispositivo Médico'], row['Cant. Sol.'], row['Cant. Ap.'], 
+            row['Lotes y Cantidades a Despachar'], row['Fechas Caducidad'], row['Stock Bodega']
+        ])
     wb.save(output_excel)
     output_excel.seek(0)
 
-    # Generar PDF
+    # PDF output
     output_pdf = io.BytesIO()
     doc = SimpleDocTemplate(output_pdf, pagesize=letter, rightMargin=18, leftMargin=18, topMargin=20, bottomMargin=20)
     elements = []
-    
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=10, alignment=1, textColor=colors.HexColor('#1F4E78'))
     subtitle_style = ParagraphStyle('SubStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=7.5, alignment=1, textColor=colors.darkgray)
@@ -334,20 +287,18 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         elements.append(Spacer(1, 4))
 
         table_data = [['Nro.', 'Código', 'SKU', 'Dispositivo Médico', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock']]
-        
         for _, row in df_acta_actual.iterrows():
             is_red = row['Alerta_Rojo'] or (row['Stock Bodega'] <= 0)
             c_style = cell_red if is_red else cell_style
             c_style_ctr = cell_red_center if is_red else cell_center
-            
             table_data.append([
                 str(row['Nro.']),
                 Paragraph(str(row['Código']), c_style_ctr),
                 Paragraph(str(row['SKU']), c_style_ctr),
                 Paragraph(str(row['Dispositivo Médico']), c_style),
-                str(int(row['Cant. Aprobada'])),
+                str(int(row['Cant. Ap.'])),
                 Paragraph(str(row['Lotes y Cantidades a Despachar']), c_style),
-                Paragraph(str(row['Fechas de Caducidad']), c_style),
+                Paragraph(str(row['Fechas Caducidad']), c_style),
                 Paragraph(f"{row['Stock Bodega']:,.0f}", c_style_ctr)
             ])
 
@@ -363,42 +314,30 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
             ('TOPPADDING', (0,0), (-1,0), 3),
             ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
         ]))
-        
         elements.append(t)
         elements.append(Spacer(1, 10))
 
-        firma_data = [
-            [
-                Paragraph(f"<b>ELABORÓ / RECIBIDO:</b><br/><br/><br/>_________________________________<br/><b>{meta['elaborado_por']}</b>", sig_style),
-                Paragraph(f"<b>ENTREGADO BODEGA:</b><br/><br/><br/>_________________________________<br/><b>{meta['entregado_por']}</b>", sig_style),
-                Paragraph(f"<b>VALIDÓ / AUTORIZÓ:</b><br/><br/><br/>_________________________________<br/><b>{meta['validado_por']}</b>", sig_style)
-            ]
-        ]
-        
+        firma_data = [[
+            Paragraph(f"<b>ELABORÓ / RECIBIDO:</b><br/><br/><br/>_________________________________<br/><b>{meta['elaborado_por']}</b>", sig_style),
+            Paragraph(f"<b>ENTREGADO BODEGA:</b><br/><br/><br/>_________________________________<br/><b>{meta['entregado_por']}</b>", sig_style),
+            Paragraph(f"<b>VALIDÓ / AUTORIZÓ:</b><br/><br/><br/>_________________________________<br/><b>{meta['validado_por']}</b>", sig_style)
+        ]]
         t_firmas = Table(firma_data, colWidths=[185, 185, 185])
-        t_firmas.setStyle(TableStyle([
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('VALIGN', (0,0), (-1,-1), 'TOP'),
-            ('LEFTPADDING', (0,0), (-1,-1), 4),
-            ('RIGHTPADDING', (0,0), (-1,-1), 4),
-        ]))
-
         elements.append(t_firmas)
         if i < len(metadata_actas) - 1:
             elements.append(PageBreak())
 
     doc.build(elements)
     output_pdf.seek(0)
-    
-    # Calcular métricas para las tarjetas inferiores
+
     total_req = len(lista_pdfs)
     total_items = len(df_final)
-    cant_aprobada = int(df_final['Cant. Aprobada'].sum())
+    cant_aprobada = int(df_final['Cant. Ap.'].sum())
     alertas = int(df_final['Alerta_Rojo'].sum())
 
     return output_excel.getvalue(), output_pdf.getvalue(), total_req, total_items, cant_aprobada, alertas, df_final
 
-# Botón principal de ejecución
+# Botón para ejecutar cruce en lote
 if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
     if st.button("🚀 Ejecutar Cruce FEFO en Lote", type="primary", use_container_width=True):
         with st.spinner("Procesando datos institucionales..."):
@@ -409,9 +348,6 @@ if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
             res_excel, res_pdf, req_n, items_n, cant_ap_n, alertas_n, df_resultado = procesar_cruce_hospitalario_lote(lista_tuplas_pdfs, excel_bytes, unif_bytes)
             
             if res_excel:
-                st.success("¡Cruce FEFO completado exitosamente!")
-                
-                # GUARDAR EN SESSION STATE PARA LAS PESTAÑAS
                 st.session_state['res_excel'] = res_excel
                 st.session_state['res_pdf'] = res_pdf
                 st.session_state['df_resultado'] = df_resultado
@@ -419,49 +355,76 @@ if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
                 st.session_state['items_n'] = items_n
                 st.session_state['cant_ap_n'] = cant_ap_n
                 st.session_state['alertas_n'] = alertas_n
-            else:
-                st.error("No se pudieron extraer datos válidos de las requisiciones.")
-else:
-    st.info("ℹ️ Cargue los tres archivos requeridos en la parte superior para habilitar el procesamiento.")
 
-# SI YA SE PROCESÓ, MOSTRAR MÉTRICAS Y PESTAÑAS IDÉNTICAS A AI STUDIO
-if 'res_excel' in st.session_state:
-    st.markdown("---")
-    
-    # TARJETAS DE MÉTRICAS (Estilo AI Studio)
-    m1, m2, m3, m4, m5, m6 = st.columns(6)
-    with m1:
-        st.metric(label="Requisiciones", value=st.session_state['req_n'])
-    with m2:
-        st.metric(label="Ítems Solicitados", value=st.session_state['items_n'])
-    with m3:
-        st.metric(label="Cant. Aprobada", value=st.session_state['cant_ap_n'])
-    with m4:
-        st.metric(label="Despacho con Lote", value=st.session_state['items_n'] - st.session_state['alertas_n'])
-    with m5:
-        st.metric(label="Alertas / Faltante", value=st.session_state['alertas_n'])
-    with m6:
-        cobertura = ((st.session_state['items_n'] - st.session_state['alertas_n']) / st.session_state['items_n'] * 100) if st.session_state['items_n'] > 0 else 0
-        st.metric(label="Cobertura FEFO", value=f"{cobertura:.1f}%")
+# CONTENIDO DE LA PESTAÑA: MATRIZ CONSOLIDADA
+with tab_matriz:
+    if 'df_resultado' in st.session_state:
+        # Tarjetas de métricas idénticas a la imagen de AI Studio
+        m1, m2, m3, m4, m5, m6 = st.columns(6)
+        with m1:
+            st.metric("Requisiciones", st.session_state['req_n'], "Servicios")
+        with m2:
+            st.metric("Ítems Solicitados", st.session_state['items_n'], "Unids pedidas")
+        with m3:
+            st.metric("Cant. Aprobada", st.session_state['cant_ap_n'], "Para dispensación")
+        with m4:
+            st.metric("Despacho con Lote", st.session_state['items_n'] - st.session_state['alertas_n'], "Cubiertos")
+        with m5:
+            st.metric("Alertas / Faltante", st.session_state['alertas_n'], "Sin stock")
+        with m6:
+            cob = ((st.session_state['items_n'] - st.session_state['alertas_n']) / st.session_state['items_n'] * 100) if st.session_state['items_n'] > 0 else 0
+            st.metric("Cobertura FEFO", f"{cob:.1f}%")
 
-    st.markdown("---")
+        st.markdown("---")
 
-    # PESTAÑAS DE NAVEGACIÓN SUPERIOR (Matriz, Actas, Lotes, Descargas)
-    tab1, tab2, tab3 = st.tabs(["📋 Matriz Consolidada", "📑 Actas Oficiales (PDF)", "📥 Descargas Directas"])
+        # Barra de búsqueda, filtros de estado y botón de descarga XLSX
+        f_col1, f_col2, f_col3 = st.columns([2, 1, 1])
+        with f_col1:
+            busqueda = st.text_input("🔍 Buscar por dispositivo, código, SKU, lote o PDF...", "")
+        with f_col2:
+            filtro_estado = st.selectbox("Filtro Estado", ["Todos", "Con Alerta / Faltante", "100% Cubiertos"])
+        with f_col3:
+            st.write("")
+            st.download_button("📥 Descargar XLSX", data=st.session_state['res_excel'], file_name="Consolidado_FEFO.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
 
-    with tab1:
-        st.subheader("Matriz Consolidada de Cruce FEFO")
-        st.dataframe(st.session_state['df_resultado'], use_container_width=True)
+        # Filtrado dinámico
+        df_mostrar = st.session_state['df_resultado']
+        if busqueda:
+            mask = df_mostrar.astype(str).apply(lambda x: x.str.contains(busqueda, case=False)).any(axis=1)
+            df_mostrar = df_mostrar[mask]
 
-    with tab2:
-        st.subheader("Vista Previa y Generación de Actas Oficiales")
-        st.write("Las actas oficiales están listas para ser descargadas con las firmas institucionales correspondientes.")
-        st.download_button("📥 Descargar Actas en PDF", data=st.session_state['res_pdf'], file_name="Actas_Oficiales.pdf", mime="application/pdf", use_container_width=True)
+        if "Con Alerta" in filtro_estado:
+            df_mostrar = df_mostrar[df_mostrar['Alerta_Rojo'] == True]
+        elif "100%" in filtro_estado:
+            df_mostrar = df_mostrar[df_mostrar['Alerta_Rojo'] == False]
 
-    with tab3:
-        st.subheader("Centro de Descargas")
-        col_d1, col_d2 = st.columns(2)
-        with col_d1:
-            st.download_button("📊 Descargar Excel Consolidado", data=st.session_state['res_excel'], file_name="Consolidado_FEFO.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
-        with col_d2:
-            st.download_button("📑 Descargar Actas Oficiales en PDF", data=st.session_state['res_pdf'], file_name="Actas_Oficiales.pdf", mime="application/pdf", use_container_width=True)
+        st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
+    else:
+        st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote** para habilitar la matriz y las métricas.")
+
+# CONTENIDO DE LA PESTAÑA: ACTAS OFICIALES
+with tab_actas:
+    st.subheader("📑 Actas Oficiales de Dispensación (PDF)")
+    if 'res_pdf' in st.session_state:
+        st.success("Actas oficiales generadas correctamente y listas para descarga.")
+        st.download_button("📥 Descargar Actas en PDF", data=st.session_state['res_pdf'], file_name="Actas_Oficiales.pdf", mime="application/pdf")
+    else:
+        st.info("Ejecute el cruce FEFO para generar las actas oficiales.")
+
+# CONTENIDO DE LA PESTAÑA: LOTES Y CADUCIDADES
+with tab_lotes:
+    st.subheader("📊 Lotes y Caducidades Registradas")
+    if 'df_resultado' in st.session_state:
+        st.dataframe(st.session_state['df_resultado'][['PDF Origen', 'Servicio', 'Dispositivo Médico', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad']], use_container_width=True, hide_index=True)
+    else:
+        st.info("Cargue los archivos para ver la distribución de lotes y fechas de caducidad.")
+
+# CONTENIDO DE LA PESTAÑA: PLANTILLAS Y AYUDA
+with tab_ayuda:
+    st.subheader("💡 Plantillas y Ayuda")
+    st.markdown("""
+    * **Paso 1:** Suba sus archivos PDF con los pedidos de requisición de los diferentes servicios hospitalarios.
+    * **Paso 2:** Cargue el Excel de existencias por lote y fecha de caducidad (`F. Cad`).
+    * **Paso 3:** Cargue el archivo Excel unificado de stock general de bodega o farmacia.
+    * **Paso 4:** Presione el botón **Ejecutar Cruce FEFO en Lote** para consolidar automáticamente todo el sistema.
+    """)
