@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados: Todo el contenido va dentro de tarjetas/cuadros blancos sólidos con letras oscuras y legibles
+# Estilos CSS avanzados: Forzar tarjetas con fondo blanco sólido y texto negro oscuro en todos los elementos
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -94,7 +94,26 @@ st.markdown("""
         border-bottom: 3px solid #66b3ff !important;
     }
 
-    /* Contenedor panel blanco sólido para el interior de las pestañas */
+    /* Contenedor panel blanco sólido global para textos, radios, toggles y subtítulos flotantes */
+    p, label, span, .stRadio label, .stCheckbox label, .stToggle label, div[data-testid="stMarkdownContainer"] p {
+        background-color: #ffffff !important;
+        color: #111827 !important;
+        font-weight: 700 !important;
+        padding: 4px 8px;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: 1px solid #e5e7eb;
+        display: inline-block;
+        margin: 2px 0;
+    }
+
+    /* Excepciones donde NO queremos fondo blanco en el span para no romper iconos o tablas */
+    .stMetric label, .stMetric p, table span, th span, td span, .portal-header span {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
     .tab-content-box {
         background-color: #ffffff;
         border: 1px solid #d0d7de;
@@ -102,21 +121,13 @@ st.markdown("""
         padding: 25px 30px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.18);
         margin-top: 15px;
-        color: #1d2731;
+        color: #111827;
     }
 
-    /* Estilos de títulos y textos dentro de los paneles */
     .tab-content-box h2, .tab-content-box h3 {
         color: #0b3c5d;
         font-weight: 800;
         margin-top: 0;
-    }
-
-    .tab-content-box p, .tab-content-box li {
-        color: #1d2731;
-        font-size: 15px;
-        line-height: 1.6;
-        font-weight: 500;
     }
 
     /* Tarjetas de Métricas Profesionales con Fondo Sólido */
@@ -132,21 +143,15 @@ st.markdown("""
         color: #1f4e78 !important;
         font-weight: 700 !important;
         font-size: 13px !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
     }
 
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #0b3c5d !important;
         font-weight: 800 !important;
         font-size: 24px !important;
-    }
-
-    /* Mensajes informativos */
-    .stAlert {
-        background-color: #ffffff !important;
-        color: #0b3c5d !important;
-        font-weight: 600;
-        border: 1px solid #328cc1 !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
 
     .acta-document-box {
@@ -159,12 +164,14 @@ st.markdown("""
     }
 
     .acta-header-title {
-        color: #1f4e78;
+        color: #0b3c5d;
         font-weight: 800;
         font-size: 18px;
         text-align: center;
         margin-bottom: 2px;
         text-transform: uppercase;
+        background-color: transparent !important;
+        border: none !important;
     }
 
     .acta-sub-title {
@@ -173,6 +180,8 @@ st.markdown("""
         font-size: 14px;
         text-align: center;
         margin-bottom: 15px;
+        background-color: transparent !important;
+        border: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -721,7 +730,7 @@ with tab_lotes:
     else:
         st.info("Cargue los archivos para ver la distribución de lotes y fechas de caducidad.")
 
-# PESTAÑA 4: PLANTILLAS Y AYUDA (Envuelta en tarjeta blanca sólida para lectura perfecta)
+# PESTAÑA 4: PLANTILLAS Y AYUDA
 with tab_ayuda:
     st.markdown("""
         <div class="tab-content-box">
