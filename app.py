@@ -20,14 +20,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS idénticos a la interfaz institucional de AI Studio
+# Estilos CSS avanzados para replicar exactamente la interfaz
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stApp { background-color: #f8f9fa; }
 
-    /* Barra Superior de Navegación */
+    /* Contenedor Superior */
     .top-nav-container {
         background: #ffffff;
         padding: 12px 20px;
@@ -39,20 +39,50 @@ st.markdown("""
         margin-bottom: 20px;
         border: 1px solid #e0e0e0;
     }
-    
-    /* Tarjetas de Métricas */
-    .metric-card {
-        background: white;
-        padding: 15px;
+
+    /* Documento Acta en Pantalla */
+    .acta-document-box {
+        background-color: #ffffff;
+        border: 1px solid #d0d7de;
         border-radius: 8px;
-        border: 1px solid #e0e0e0;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        text-align: left;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        margin-top: 15px;
+    }
+
+    .acta-header-title {
+        color: #1f4e78;
+        font-weight: 800;
+        font-size: 18px;
+        text-align: center;
+        margin-bottom: 2px;
+        text-transform: uppercase;
+    }
+
+    .acta-sub-title {
+        color: #1f4e78;
+        font-weight: 700;
+        font-size: 14px;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .acta-alert-banner {
+        background-color: #fde8e4;
+        border: 1px solid #f5c2c7;
+        color: #842029;
+        padding: 10px 15px;
+        border-radius: 6px;
+        font-size: 13px;
+        margin-bottom: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# Encabezado Superior Estilizado con Pestañas
+# Encabezado Superior Estilizado
 st.markdown("""
     <div class="top-nav-container">
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -73,7 +103,7 @@ tab_matriz, tab_actas, tab_lotes, tab_ayuda = st.tabs([
     "Plantillas y Ayuda"
 ])
 
-# Módulo de Carga en Lote desplegable
+# Módulo de Carga en Lote
 with st.expander("📂 Módulo de Carga en Lote (Requisiciones & Inventarios)", expanded=True):
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -267,7 +297,7 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
 
     df_final = pd.DataFrame(todos_los_resultados)
     if df_final.empty:
-        return None, None, 0, 0, 0, 0, None
+        return None, None, 0, 0, 0, 0, None, []
 
     # Excel output
     output_excel = io.BytesIO()
@@ -369,7 +399,7 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     cant_aprobada = int(df_final['Cant. Ap.'].sum())
     alertas = int(df_final['Alerta_Rojo'].sum())
 
-    return output_excel.getvalue(), output_pdf.getvalue(), total_req, total_items, cant_aprobada, alertas, df_final
+    return output_excel.getvalue(), output_pdf.getvalue(), total_req, total_items, cant_aprobada, alertas, df_final, metadata_actas
 
 # Botón de ejecución en lote
 if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
@@ -379,7 +409,7 @@ if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
             excel_bytes = uploaded_lotes.read()
             unif_bytes = uploaded_unificado.read()
             
-            res_excel, res_pdf, req_n, items_n, cant_ap_n, alertas_n, df_resultado = procesar_cruce_hospitalario_lote(lista_tuplas_pdfs, excel_bytes, unif_bytes)
+            res_excel, res_pdf, req_n, items_n, cant_ap_n, alertas_n, df_resultado, meta_actas = procesar_cruce_hospitalario_lote(lista_tuplas_pdfs, excel_bytes, unif_bytes)
             
             if res_excel:
                 st.session_state['res_excel'] = res_excel
@@ -389,11 +419,11 @@ if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
                 st.session_state['items_n'] = items_n
                 st.session_state['cant_ap_n'] = cant_ap_n
                 st.session_state['alertas_n'] = alertas_n
+                st.session_state['meta_actas'] = meta_actas
 
-# CONTENIDO DE LA PESTAÑA: MATRIZ CONSOLIDADA
+# PESTAÑA 1: MATRIZ CONSOLIDADA
 with tab_matriz:
     if 'df_resultado' in st.session_state:
-        # Tarjetas de Métricas idénticas a la imagen
         m1, m2, m3, m4, m5, m6 = st.columns(6)
         with m1:
             st.metric("Requisiciones", st.session_state['req_n'], "Servicios")
@@ -411,7 +441,6 @@ with tab_matriz:
 
         st.markdown("---")
 
-        # Barra de búsqueda, filtros de estado y botones de descarga XLSX / PDF idénticos
         f_col1, f_col2, f_col3, f_col4 = st.columns([2, 1, 1, 1])
         with f_col1:
             busqueda = st.text_input("🔍 Buscar por dispositivo, código, SKU, lote o PDF...", "")
@@ -424,7 +453,6 @@ with tab_matriz:
             st.write("")
             st.download_button("📥 Descargar PDF", data=st.session_state['res_pdf'], file_name="Actas_Oficiales.pdf", mime="application/pdf", use_container_width=True)
 
-        # Filtrado dinámico de datos
         df_mostrar = st.session_state['df_resultado']
         if busqueda:
             mask = df_mostrar.astype(str).apply(lambda x: x.str.contains(busqueda, case=False)).any(axis=1)
@@ -435,7 +463,6 @@ with tab_matriz:
         elif "100%" in filtro_estado:
             df_mostrar = df_mostrar[df_mostrar['Alerta_Rojo'] == False]
 
-        # Función para colorear las filas con alerta en rojo claro tal como se ve en la imagen
         def color_fefo_rows(row):
             if row.get('Alerta_Rojo', False):
                 return ['background-color: #fde8e4; color: #c00000; font-weight: bold'] * len(row)
@@ -443,18 +470,85 @@ with tab_matriz:
 
         st.dataframe(df_mostrar.style.apply(color_fefo_rows, axis=1), use_container_width=True, hide_index=True)
     else:
-        st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote** para habilitar la matriz y las métricas idénticas a la vista previa.")
+        st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote**.")
 
-# CONTENIDO DE LA PESTAÑA: ACTAS OFICIALES
+# PESTAÑA 2: ACTAS OFICIALES (FORMATO EXACTO A LA IMAGEN)
 with tab_actas:
-    st.subheader("📑 Actas Oficiales de Dispensación (PDF)")
-    if 'res_pdf' in st.session_state:
-        st.success("Actas oficiales generadas correctamente y listas para descarga institucional.")
-        st.download_button("📥 Descargar Actas Oficiales en PDF", data=st.session_state['res_pdf'], file_name="Actas_Oficiales.pdf", mime="application/pdf")
-    else:
-        st.info("Ejecute el cruce FEFO para generar las actas oficiales.")
+    if 'df_resultado' in st.session_state and 'meta_actas' in st.session_state:
+        meta_list = st.session_state['meta_actas']
+        servicios_disponibles = [m['servicio'] for m in meta_list]
+        servicios_disponibles_unicos = list(dict.fromkeys(servicios_disponibles))
 
-# CONTENIDO DE LA PESTAÑA: LOTES Y CADUCIDADES
+        # Fila superior de selección de Requisición / Acta y botones de acción
+        st.markdown("**Seleccionar Requisición / Acta:**")
+        
+        c_sel1, c_sel2 = st.columns([3, 1])
+        with c_sel1:
+            servicio_seleccionado = st.radio(
+                "Servicio",
+                options=servicios_disponibles_unicos + ["Ver Todas"],
+                horizontal=True,
+                label_visibility="collapsed"
+            )
+        with c_sel2:
+            st.download_button(
+                "📥 Descargar Todas en PDF", 
+                data=st.session_state['res_pdf'], 
+                file_name="Actas_Oficiales_Consolidadas.pdf", 
+                mime="application/pdf",
+                use_container_width=True
+            )
+
+        # Filtrar datos según el servicio elegido
+        if servicio_seleccionado != "Ver Todas":
+            meta_filtrada = [m for m in meta_list if m['servicio'] == servicio_seleccionado]
+        else:
+            meta_filtrada = meta_list
+
+        # Renderizar cada Acta en Pantalla con la caja y tabla oficial
+        for meta in meta_filtrada:
+            p_name = meta['nombre_pdf']
+            df_acta = st.session_state['df_resultado'][st.session_state['df_resultado']['PDF Origen'] == p_name]
+            
+            if df_acta.empty:
+                continue
+
+            num_alertas = df_acta['Alerta_Rojo'].sum()
+            hora_actual = datetime.datetime.now().strftime("%d/%10/%Y %H:%M")
+
+            st.markdown(f"""
+                <div class="acta-document-box">
+                    <div class="acta-header-title">HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO</div>
+                    <div class="acta-sub-title">ACTA OFICIAL DE DISPENSACIÓN Y CRUCE DE STOCK (FEFO)<br><span style="font-weight:normal; font-size:12px; color:gray;">Archivo de Origen: {p_name}</span></div>
+                    
+                    <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; margin-bottom:12px; color:#333;">
+                        <span>SERVICIO SOLICITANTE: <span style="color:#1f4e78;">{meta['servicio']}</span></span>
+                        <span>EMISIÓN: {hora_actual}</span>
+                    </div>
+            """, unsafe_allow_html=True)
+
+            if num_alertas > 0:
+                st.markdown(f"""
+                    <div class="acta-alert-banner">
+                        <span>⚠️ Esta acta contiene <b>{num_alertas} ítem(s) con alerta roja</b> (stock insuficiente o sin lote disponible).</span>
+                        <span style="font-weight:bold; text-decoration:underline;">Requiere validación de bodega</span>
+                    </div>
+                """, unsafe_allow_html=True)
+
+            def color_acta_rows(row):
+                if row.get('Alerta_Rojo', False):
+                    return ['background-color: #fde8e4; color: #c00000; font-weight: bold'] * len(row)
+                return [''] * len(row)
+
+            cols_acta = ['Nro.', 'Código', 'Dispositivo Médico', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock Bodega']
+            st.dataframe(df_acta[cols_acta].style.apply(color_acta_rows, axis=1), use_container_width=True, hide_index=True)
+
+            st.markdown("</div><br>", unsafe_allow_html=True)
+
+    else:
+        st.info("ℹ️ Ejecute el cruce FEFO para visualizar el formato interactivo de las Actas Oficiales.")
+
+# PESTAÑA 3: LOTES Y CADUCIDADES
 with tab_lotes:
     st.subheader("📊 Lotes y Caducidades Registradas")
     if 'df_resultado' in st.session_state:
@@ -462,7 +556,7 @@ with tab_lotes:
     else:
         st.info("Cargue los archivos para ver la distribución de lotes y fechas de caducidad.")
 
-# CONTENIDO DE LA PESTAÑA: PLANTILLAS Y AYUDA
+# PESTAÑA 4: PLANTILLAS Y AYUDA
 with tab_ayuda:
     st.subheader("💡 Plantillas y Ayuda del Sistema")
     st.markdown("""
