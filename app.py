@@ -27,23 +27,30 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS institucionales y profesionales para Gerencia
+# Estilos CSS con imagen de fondo institucional de la Catedral de Cuenca y diseño gerencial
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    .stApp { background-color: #f4f6f9; }
+    
+    .stApp {
+        background-image: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.88)), 
+                          url('https://upload.wikimedia.org/wikipedia/commons/e/e9/Catedral_de_la_Inmaculada_Concepci%C3%B3n%2C_Cuenca%2C_Ecuador.jpg');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
 
-    /* Estilo Gerencial del Banner Superior */
     .gerencia-header {
-        background: linear-gradient(135deg, #1f4e78 0%, #112d4e 100%);
+        background: linear-gradient(135deg, rgba(31, 78, 120, 0.95) 0%, rgba(17, 45, 78, 0.95) 100%);
         padding: 30px 20px;
         border-radius: 10px;
         color: white;
         text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         margin-bottom: 25px;
         border-bottom: 4px solid #00b4d8;
+        backdrop-filter: blur(5px);
     }
 
     .gerencia-title {
@@ -65,11 +72,11 @@ st.markdown("""
     }
 
     .acta-document-box {
-        background-color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.96);
         border: 1px solid #d0d7de;
         border-radius: 8px;
         padding: 30px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         margin-top: 15px;
     }
 
@@ -92,7 +99,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Banner Principal Institucional para Gerencia (Centrado y en Grande)
+# Banner Principal Institucional para Gerencia
 st.markdown("""
     <div class="gerencia-header">
         <div style="font-size: 32px; margin-bottom: 5px;">🏥</div>
