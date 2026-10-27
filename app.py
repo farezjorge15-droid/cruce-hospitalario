@@ -380,7 +380,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     wb.save(output_excel)
     output_excel.seek(0)
 
-    # Generar PDF inicial
     res_pdf_bytes = generar_pdf_actas(df_final, metadata_actas)
 
     total_req = len(lista_pdfs)
@@ -461,12 +460,11 @@ with tab_matriz:
     else:
         st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote**.")
 
-# PESTAÑA 2: ACTAS OFICIALES (CON ACTIVACIÓN DE EDICIÓN Y BOTÓN DE GUARDADO)
+# PESTAÑA 2: ACTAS OFICIALES (EDICIÓN INDependiente POR CADA ACTA)
 with tab_actas:
     if 'df_resultado' in st.session_state and 'meta_actas' in st.session_state:
         
-        # Botón de activación para modificar firmas
-        modo_edicion = st.toggle("✏️ Activar modo de edición de firmas", value=False)
+        modo_edicion = st.toggle("✏️ Activar modo de edición de firmas individuales", value=False)
 
         meta_list = st.session_state['meta_actas']
         servicios_disponibles = [m['servicio'] for m in meta_list]
@@ -496,7 +494,11 @@ with tab_actas:
         else:
             meta_filtrada = meta_list
 
-        for idx, meta in enumerate(meta_filtrada):
+        for idx, meta in enumerate(meta_list):
+            # Si hay filtro de servicio activo, ocultar las que no correspondan
+            if servicio_seleccionado != "Ver Todas" and meta['servicio'] != servicio_seleccionado:
+                continue
+
             p_name = meta['nombre_pdf']
             df_acta = st.session_state['df_resultado'][st.session_state['df_resultado']['PDF Origen'] == p_name]
             
@@ -565,17 +567,15 @@ with tab_actas:
                     st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Jefatura / Responsable</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
 
-                # Asignar valores temporales en metadatos
+                # Guardar cambios específicamente para ESTA acta en la lista
                 meta_list[idx]['elaborado_por'] = nuevo_elab
                 meta_list[idx]['entregado_por'] = nuevo_entre
                 meta_list[idx]['validado_por'] = nuevo_val
 
-                # Botón para guardar modificaciones y actualizar el PDF
-                if st.button(f"💾 Guardar Cambios de Firmas ({p_name})", key=f"btn_save_{idx}", type="primary"):
+                if st.button(f"💾 Guardar Cambios de esta Acta ({p_name})", key=f"btn_save_{idx}", type="primary"):
                     st.session_state['res_pdf'] = generar_pdf_actas(st.session_state['df_resultado'], meta_list)
-                    st.success("¡Cambios guardados con éxito! El PDF ya está actualizado con los nuevos nombres.")
+                    st.success(f"¡Acta de {meta['servicio']} actualizada y guardada con éxito!")
             else:
-                # Vista estática de los nombres actuales
                 with f_col1:
                     st.markdown(f"""
                         <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
