@@ -27,14 +27,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS con fondo de la catedral de Cuenca y diseño gerencial limpio
+# Estilos CSS avanzados para garantizar visibilidad total y diseño gerencial
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
     .stApp {
-        background-image: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.90)), 
+        background-image: linear-gradient(rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.92)), 
                           url('https://upload.wikimedia.org/wikipedia/commons/e/e9/Catedral_de_la_Inmaculada_Concepci%C3%B3n%2C_Cuenca%2C_Ecuador.jpg');
         background-size: cover;
         background-position: center;
@@ -69,6 +69,32 @@ st.markdown("""
         text-transform: uppercase;
         color: #66b3ff;
         margin-top: 6px;
+    }
+
+    /* Tarjetas de Métricas Profesionales con Fondo Sólido para Alta Visibilidad */
+    div[data-testid="stMetric"] {
+        background-color: #ffffff !important;
+        border: 1px solid #d0d7de !important;
+        padding: 15px !important;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
+    }
+
+    div[data-testid="stMetric"] label {
+        color: #1f4e78 !important;
+        font-weight: 700 !important;
+        font-size: 13px !important;
+    }
+
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #0b3c5d !important;
+        font-weight: 800 !important;
+        font-size: 24px !important;
+    }
+
+    div[data-testid="stMetric"] div[data-testid="stMetricDelta"] {
+        font-weight: 600 !important;
+        font-size: 11px !important;
     }
 
     .acta-document-box {
@@ -108,7 +134,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Pestañas Superiores de Navegación (Funcionales)
+# Pestañas Superiores de Navegación
 tab_matriz, tab_actas, tab_lotes, tab_ayuda = st.tabs([
     "Matriz Consolidada", 
     "Actas Oficiales", 
