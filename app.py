@@ -27,34 +27,34 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS con imagen de fondo institucional de la Catedral de Cuenca y diseño gerencial
+# Estilos CSS con formato de paneles, recuadros de colores institucionales y fondo de la catedral
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
     .stApp {
-        background-image: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.88)), 
+        background-image: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.90)), 
                           url('https://upload.wikimedia.org/wikipedia/commons/e/e9/Catedral_de_la_Inmaculada_Concepci%C3%B3n%2C_Cuenca%2C_Ecuador.jpg');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
     }
 
-    .gerencia-header {
-        background: linear-gradient(135deg, rgba(31, 78, 120, 0.95) 0%, rgba(17, 45, 78, 0.95) 100%);
-        padding: 30px 20px;
-        border-radius: 10px;
+    /* Estilo de Cabecera Institucional Tipo Portal Oficial */
+    .portal-header {
+        background: linear-gradient(135deg, #0b3c5d 0%, #1d2731 100%);
+        padding: 25px 20px;
+        border-radius: 8px;
         color: white;
         text-align: center;
         box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        margin-bottom: 25px;
-        border-bottom: 4px solid #00b4d8;
-        backdrop-filter: blur(5px);
+        margin-bottom: 20px;
+        border-bottom: 4px solid #328cc1;
     }
 
-    .gerencia-title {
-        font-size: 24px;
+    .portal-title {
+        font-size: 26px;
         font-weight: 800;
         letter-spacing: 0.5px;
         text-transform: uppercase;
@@ -62,17 +62,31 @@ st.markdown("""
         color: #ffffff;
     }
 
-    .gerencia-subtitle {
+    .portal-subtitle {
         font-size: 13px;
-        font-weight: 400;
-        letter-spacing: 1.5px;
+        font-weight: 500;
+        letter-spacing: 2px;
         text-transform: uppercase;
-        color: #90e0ef;
-        margin-top: 8px;
+        color: #66b3ff;
+        margin-top: 6px;
     }
 
+    /* Bloques de Acceso Rápido Tipo Portal */
+    .menu-grid {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .menu-card-1 { background-color: #004b87; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .menu-card-2 { background-color: #0066b2; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .menu-card-3 { background-color: #0080ff; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .menu-card-4 { background-color: #0099ff; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .menu-card-5 { background-color: #1a8cff; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+    .menu-card-6 { background-color: #003366; flex: 1; padding: 15px; border-radius: 6px; color: white; text-align: center; font-weight: bold; font-size: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+
     .acta-document-box {
-        background-color: rgba(255, 255, 255, 0.96);
+        background-color: rgba(255, 255, 255, 0.97);
         border: 1px solid #d0d7de;
         border-radius: 8px;
         padding: 30px;
@@ -99,12 +113,24 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Banner Principal Institucional para Gerencia
+# Cabecera Principal Institucional
 st.markdown("""
-    <div class="gerencia-header">
-        <div style="font-size: 32px; margin-bottom: 5px;">🏥</div>
-        <h1 class="gerencia-title">Hospital Provincial General Docente Vicente Corral Moscoso</h1>
-        <div class="gerencia-subtitle">Sistema Automatizado de Cruce Hospitalario FEFO • Bodega & Farmacia</div>
+    <div class="portal-header">
+        <div style="font-size: 30px; margin-bottom: 3px;">🏥</div>
+        <h1 class="portal-title">Hospital Provincial General Docente Vicente Corral Moscoso</h1>
+        <div class="portal-subtitle">Sistema Automatizado de Cruce Hospitalario FEFO • Bodega & Farmacia</div>
+    </div>
+""", unsafe_allow_html=True)
+
+# Barra de Accesos Rápidos Dividida en Recuadros de Colores (Estilo Portal Oficial)
+st.markdown("""
+    <div class="menu-grid">
+        <div class="menu-card-1">📅 Módulo de Requisiciones PDF</div>
+        <div class="menu-card-2">🧪 Matriz Consolidada FEFO</div>
+        <div class="menu-card-3">📊 Control de Lotes y Caducidades</div>
+        <div class="menu-card-4">📋 Actas Oficiales y Firmas</div>
+        <div class="menu-card-5">📥 Exportación de Reportes</div>
+        <div class="menu-card-6">💡 Ayuda Institucional</div>
     </div>
 """, unsafe_allow_html=True)
 
