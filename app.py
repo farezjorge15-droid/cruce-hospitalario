@@ -23,34 +23,24 @@ st.set_page_config(
 # Estilos CSS avanzados para la interfaz institucional
 st.markdown("""
     <style>
-    /* Ocultar elementos predeterminados molestos */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
-    /* Fondo limpio general */
     .stApp {
         background-color: #f4f7f6;
     }
 
-    /* Encabezado Principal */
     .header-box {
         background: linear-gradient(135deg, #0f4c81 0%, #1b365d 100%);
-        padding: 25px 35px;
+        padding: 20px 30px;
         border-radius: 14px;
         color: white;
         margin-bottom: 25px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.12);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    
-    .header-text-container {
-        flex-grow: 1;
     }
     
     .hospital-title {
-        font-size: 26px;
+        font-size: 23px;
         font-weight: 800;
         margin: 0;
         color: #ffffff;
@@ -59,23 +49,12 @@ st.markdown("""
     }
     
     .sub-title {
-        font-size: 14px;
+        font-size: 13px;
         color: #b0bec5;
         margin-top: 6px;
         font-weight: 500;
     }
-    
-    .msp-logo {
-        background-color: white;
-        padding: 8px 15px;
-        border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
 
-    /* Tarjetas de carga de archivos de alta definición */
     .upload-card-header {
         background-color: #ffffff;
         padding: 15px 20px;
@@ -89,18 +68,19 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ENCABEZADO INSTITUCIONAL CON LOGO MSP, TÍTULO DEL HOSPITAL Y SUBTÍTULO
-st.markdown("""
-    <div class="header-box">
-        <div class="header-text-container">
+# ENCABEZADO INSTITUCIONAL CON COLUMNAS NATIVAS PARA ASEGURAR LA CARGA DEL LOGO
+with st.container():
+    st.markdown('<div class="header-box">', unsafe_allow_html=True)
+    col_h1, col_h2 = st.columns([6, 1])
+    with col_h1:
+        st.markdown("""
             <h1 class="hospital-title">HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO</h1>
             <p class="sub-title">Sistema de Cruce FEFO y Lotes — Bodega y Farmacia</p>
-        </div>
-        <div class="msp-logo">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/8/8c/Escudo_de_Ecuador_%28oficial%29.svg" height="55" alt="MSP Ecuador">
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+    with col_h2:
+        # Usamos st.image nativo para evitar bloqueos de enlaces externos en HTML
+        st.image("https://upload.wikimedia.org/wikipedia/commons/8/8c/Escudo_de_Ecuador_%28oficial%29.svg", width=85)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.write("")
 
