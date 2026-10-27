@@ -27,7 +27,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS avanzados: Transparencia sutil estilo cristal, bordes difuminados y legibilidad óptima
+# Estilos CSS avanzados: Diseño ejecutivo sin recuadros blancos pesados, estilo cristal oscuro institucional
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -42,15 +42,15 @@ st.markdown("""
 
     /* Cabecera Institucional */
     .portal-header {
-        background: linear-gradient(135deg, rgba(11, 60, 93, 0.92) 0%, rgba(29, 39, 49, 0.92) 100%);
+        background: linear-gradient(135deg, rgba(11, 60, 93, 0.94) 0%, rgba(29, 39, 49, 0.94) 100%);
         padding: 25px 20px;
         border-radius: 10px;
         color: white;
         text-align: center;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
         margin-bottom: 20px;
         border-bottom: 4px solid #328cc1;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(6px);
     }
 
     .portal-title {
@@ -71,60 +71,88 @@ st.markdown("""
         margin-top: 6px;
     }
 
-    /* Pestañas de Navegación con transparencia y bordes suaves */
+    /* Pestañas de Navegación */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
-        background-color: rgba(255, 255, 255, 0.85);
+        background-color: rgba(11, 60, 93, 0.85);
         padding: 10px;
         border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         backdrop-filter: blur(6px);
     }
 
     .stTabs [data-baseweb="tab"] {
-        background-color: rgba(31, 78, 120, 0.9) !important;
+        background-color: rgba(255, 255, 255, 0.15) !important;
         border-radius: 6px !important;
         color: white !important;
         font-weight: 700 !important;
         padding: 10px 20px !important;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
 
     .stTabs [aria-selected="true"] {
-        background-color: rgba(11, 60, 93, 0.98) !important;
-        border-bottom: 3px solid #66b3ff !important;
+        background-color: #328cc1 !important;
+        border-bottom: 3px solid #ffffff !important;
     }
 
-    /* Textos, etiquetas y subtítulos con fondo semitransparente sutil (cristal) */
-    p, label, span, .stRadio label, .stCheckbox label, .stToggle label, div[data-testid="stMarkdownContainer"] p {
-        background-color: rgba(255, 255, 255, 0.88) !important;
-        color: #111827 !important;
+    /* Módulo de Carga en Lote: Estilo Panel de Control Ejecutivo Semitransparente */
+    div[data-testid="stExpander"] {
+        background-color: rgba(11, 60, 93, 0.88) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+        backdrop-filter: blur(8px);
+        color: white !important;
+    }
+
+    div[data-testid="stExpander"] summary {
+        color: white !important;
         font-weight: 700 !important;
-        padding: 5px 10px;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-        border: 1px solid rgba(209, 213, 219, 0.5);
-        display: inline-block;
-        margin: 3px 0;
-        backdrop-filter: blur(4px);
     }
 
-    /* Excepciones para mantener limpio el diseño en métricas y tablas */
-    .stMetric label, .stMetric p, table span, th span, td span, .portal-header span {
+    div[data-testid="stExpander"] summary svg {
+        fill: white !important;
+    }
+
+    /* Textos y etiquetas dentro del panel limpio */
+    div[data-testid="stExpander"] label, div[data-testid="stExpander"] p {
+        color: #ffffff !important;
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        backdrop-filter: none !important;
+        font-weight: 600 !important;
     }
 
-    /* Tarjetas principales y paneles semitransparentes */
-    .tab-content-box, div[data-testid="stExpander"], .acta-document-box {
-        background-color: rgba(255, 255, 255, 0.90) !important;
+    /* Tarjetas de Métricas Profesionales */
+    div[data-testid="stMetric"] {
+        background-color: rgba(255, 255, 255, 0.92) !important;
+        border: 1px solid rgba(209, 213, 219, 0.6) !important;
+        padding: 15px !important;
+        border-radius: 10px !important;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15) !important;
+        backdrop-filter: blur(6px);
+    }
+
+    div[data-testid="stMetric"] label {
+        color: #1f4e78 !important;
+        font-weight: 700 !important;
+        font-size: 13px !important;
+        background-color: transparent !important;
+    }
+
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #0b3c5d !important;
+        font-weight: 800 !important;
+        font-size: 24px !important;
+    }
+
+    /* Paneles de Contenido General */
+    .tab-content-box, .acta-document-box {
+        background-color: rgba(255, 255, 255, 0.94) !important;
         border: 1px solid rgba(209, 213, 219, 0.6) !important;
         border-radius: 10px !important;
         padding: 25px 30px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.12) !important;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2) !important;
         margin-top: 15px;
         color: #111827;
         backdrop-filter: blur(8px);
@@ -135,33 +163,6 @@ st.markdown("""
         font-weight: 800;
         margin-top: 0;
         background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    /* Tarjetas de Métricas Profesionales con Cristal Semitransparente */
-    div[data-testid="stMetric"] {
-        background-color: rgba(255, 255, 255, 0.90) !important;
-        border: 1px solid rgba(209, 213, 219, 0.6) !important;
-        padding: 15px !important;
-        border-radius: 10px !important;
-        box-shadow: 0 6px 15px rgba(0,0,0,0.1) !important;
-        backdrop-filter: blur(6px);
-    }
-
-    div[data-testid="stMetric"] label {
-        color: #1f4e78 !important;
-        font-weight: 700 !important;
-        font-size: 13px !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
-        color: #0b3c5d !important;
-        font-weight: 800 !important;
-        font-size: 24px !important;
     }
 
     .acta-header-title {
@@ -172,7 +173,6 @@ st.markdown("""
         margin-bottom: 2px;
         text-transform: uppercase;
         background-color: transparent !important;
-        border: none !important;
     }
 
     .acta-sub-title {
@@ -182,7 +182,6 @@ st.markdown("""
         text-align: center;
         margin-bottom: 15px;
         background-color: transparent !important;
-        border: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
