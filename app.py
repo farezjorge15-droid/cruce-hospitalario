@@ -11,6 +11,13 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import io
 import datetime
+import zoneinfo
+
+# Definir la zona horaria oficial de Ecuador (Guayaquil/Cuenca UTC-5)
+TZ_ECUADOR = zoneinfo.ZoneInfo("America/Guayaquil")
+
+def obtener_hora_ecuador():
+    return datetime.datetime.now(TZ_ECUADOR).strftime("%d/%m/%Y %H:%M")
 
 # Configuración de página ancha
 st.set_page_config(
@@ -131,6 +138,8 @@ def generar_pdf_actas(df_final, metadata_actas):
     cell_red_center = ParagraphStyle('CellRedCenter', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=6.5, textColor=colors.HexColor('#C00000'), alignment=1)
     sig_style = ParagraphStyle('SigStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=6.5, alignment=1)
 
+    fecha_emision_ec = obtener_hora_ecuador()
+
     for i, meta in enumerate(metadata_actas):
         p_name_actual = meta['nombre_pdf']
         df_acta_actual = df_final[df_final['PDF Origen'] == p_name_actual]
@@ -140,7 +149,7 @@ def generar_pdf_actas(df_final, metadata_actas):
         elements.append(Paragraph("HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO", title_style))
         elements.append(Paragraph(f"ACTA OFICIAL DE DISPENSACIÓN Y CRUCE DE STOCK (FEFO) - Archivo: {p_name_actual}", subtitle_style))
         elements.append(Spacer(1, 4))
-        elements.append(Paragraph(f"<b>SERVICIO:</b> {meta['servicio']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>EMISIÓN:</b> {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}", meta_style))
+        elements.append(Paragraph(f"<b>SERVICIO:</b> {meta['servicio']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>EMISIÓN:</b> {fecha_emision_ec}", meta_style))
         elements.append(Spacer(1, 4))
 
         table_data = [['Nro.', 'Código', 'SKU', 'Dispositivo Médico', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock']]
@@ -355,7 +364,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     if df_final.empty:
         return None, None, 0, 0, 0, 0, None, []
 
-    # Excel output
     output_excel = io.BytesIO()
     wb = Workbook()
     ws = wb.active
@@ -460,7 +468,7 @@ with tab_matriz:
     else:
         st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote**.")
 
-# PESTAÑA 2: ACTAS OFICIALES (EDICIÓN INDependiente POR CADA ACTA)
+# PESTAÑA 2: ACTAS OFICIALES
 with tab_actas:
     if 'df_resultado' in st.session_state and 'meta_actas' in st.session_state:
         
@@ -489,13 +497,10 @@ with tab_actas:
                 use_container_width=True
             )
 
-        if servicio_seleccionado != "Ver Todas":
-            meta_filtrada = [m for m in meta_list if m['servicio'] == servicio_seleccionado]
-        else:
-            meta_filtrada = meta_list
+        # HORA EXACTA LOCAL DE ECUADOR
+        hora_emision_ec = obtener_hora_ecuador()
 
         for idx, meta in enumerate(meta_list):
-            # Si hay filtro de servicio activo, ocultar las que no correspondan
             if servicio_seleccionado != "Ver Todas" and meta['servicio'] != servicio_seleccionado:
                 continue
 
@@ -506,7 +511,6 @@ with tab_actas:
                 continue
 
             num_alertas = df_acta['Alerta_Rojo'].sum()
-            hora_actual = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
 
             st.markdown('<div class="acta-document-box">', unsafe_allow_html=True)
             st.markdown('<div class="acta-header-title">HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO</div>', unsafe_allow_html=True)
@@ -516,7 +520,7 @@ with tab_actas:
             with col_meta1:
                 st.markdown(f"**SERVICIO SOLICITANTE:** <span style='color:#1f4e78;'>{meta['servicio']}</span>", unsafe_allow_html=True)
             with col_meta2:
-                st.markdown(f"<div style='text-align: right;'><b>EMISIÓN:</b> {hora_actual}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='text-align: right;'><b>EMISIÓN:</b> {hora_emision_ec}</div>", unsafe_allow_html=True)
 
             st.markdown("---")
 
@@ -536,7 +540,6 @@ with tab_actas:
             cols_acta = ['Nro.', 'Código', 'Dispositivo Médico', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock Bodega']
             st.dataframe(df_acta[cols_acta].style.apply(color_acta_rows, axis=1), use_container_width=True, hide_index=True)
 
-            # BLOQUE DE FIRMAS
             st.markdown("""
                 <div style="background-color: #1f4e78; color: white; text-align: center; font-weight: bold; font-size: 12px; padding: 6px; border-radius: 4px; margin-top: 25px; margin-bottom: 15px;">
                     FIRMAS DE CONFORMIDAD Y RESPONSABILIDAD OFICIAL
@@ -567,7 +570,6 @@ with tab_actas:
                     st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Jefatura / Responsable</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
 
-                # Guardar cambios específicamente para ESTA acta en la lista
                 meta_list[idx]['elaborado_por'] = nuevo_elab
                 meta_list[idx]['entregado_por'] = nuevo_entre
                 meta_list[idx]['validado_por'] = nuevo_val
