@@ -27,15 +27,14 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Estilos CSS con la imagen permanente del hospital de fondo y diseño gerencial impecable
+# Estilos CSS con la imagen exacta solicitada de fondo (sin oscurecer) y diseño gerencial
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     
     .stApp {
-        background-image: linear-gradient(rgba(15, 23, 42, 0.82), rgba(15, 23, 42, 0.88)), 
-                          url('https://upload.wikimedia.org/wikipedia/commons/4/4b/Hospital_Vicente_Corral_Moscoso%2C_Cuenca.jpg');
+        background-image: url('https://imagenes.primicias.ec/files/og_thumbnail/uploads/2025/05/01/68140e651a043.jpeg');
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
@@ -137,7 +136,7 @@ tab_matriz, tab_actas, tab_lotes, tab_ayuda = st.tabs([
     "Plantillas y Ayuda"
 ])
 
-# Módulo de Carga en Lote (Limpio, solo con los 3 archivos necesarios)
+# Módulo de Carga en Lote
 with st.expander("📂 Módulo de Carga en Lote (Requisiciones & Inventarios)", expanded=True):
     col1, col2, col3 = st.columns(3)
     with col1:
