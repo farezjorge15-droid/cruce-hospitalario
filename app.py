@@ -117,6 +117,77 @@ def clean_exact(s):
     s = re.sub(r'\s+', ' ', s)
     return s
 
+def generar_pdf_actas(df_final, metadata_actas):
+    output_pdf = io.BytesIO()
+    doc = SimpleDocTemplate(output_pdf, pagesize=letter, rightMargin=18, leftMargin=18, topMargin=20, bottomMargin=20)
+    elements = []
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=10, alignment=1, textColor=colors.HexColor('#1F4E78'))
+    subtitle_style = ParagraphStyle('SubStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=7.5, alignment=1, textColor=colors.darkgray)
+    meta_style = ParagraphStyle('MetaStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, alignment=0, textColor=colors.black)
+    cell_style = ParagraphStyle('CellStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=6.5)
+    cell_center = ParagraphStyle('CellCenter', parent=styles['Normal'], fontName='Helvetica', fontSize=6.5, alignment=1)
+    cell_red = ParagraphStyle('CellRed', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=6.5, textColor=colors.HexColor('#C00000'))
+    cell_red_center = ParagraphStyle('CellRedCenter', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=6.5, textColor=colors.HexColor('#C00000'), alignment=1)
+    sig_style = ParagraphStyle('SigStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=6.5, alignment=1)
+
+    for i, meta in enumerate(metadata_actas):
+        p_name_actual = meta['nombre_pdf']
+        df_acta_actual = df_final[df_final['PDF Origen'] == p_name_actual]
+        if df_acta_actual.empty:
+            continue
+
+        elements.append(Paragraph("HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO", title_style))
+        elements.append(Paragraph(f"ACTA OFICIAL DE DISPENSACIÓN Y CRUCE DE STOCK (FEFO) - Archivo: {p_name_actual}", subtitle_style))
+        elements.append(Spacer(1, 4))
+        elements.append(Paragraph(f"<b>SERVICIO:</b> {meta['servicio']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>EMISIÓN:</b> {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}", meta_style))
+        elements.append(Spacer(1, 4))
+
+        table_data = [['Nro.', 'Código', 'SKU', 'Dispositivo Médico', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock']]
+        for _, row in df_acta_actual.iterrows():
+            is_red = row['Alerta_Rojo'] or (row['Stock Bodega'] <= 0)
+            c_style = cell_red if is_red else cell_style
+            c_style_ctr = cell_red_center if is_red else cell_center
+            table_data.append([
+                str(row['Nro.']),
+                Paragraph(str(row['Código']), c_style_ctr),
+                Paragraph(str(row['SKU']), c_style_ctr),
+                Paragraph(str(row['Dispositivo Médico']), c_style),
+                str(int(row['Cant. Ap.'])),
+                Paragraph(str(row['Lotes y Cantidades a Despachar']), c_style),
+                Paragraph(str(row['Fechas Caducidad']), c_style),
+                Paragraph(f"{row['Stock Bodega']:,.0f}", c_style_ctr)
+            ])
+
+        t = Table(table_data, colWidths=[20, 45, 55, 135, 30, 135, 65, 36])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1F4E78')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 7),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0,0), (-1,0), 3),
+            ('TOPPADDING', (0,0), (-1,0), 3),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
+        ]))
+        elements.append(t)
+        elements.append(Spacer(1, 10))
+
+        firma_data = [[
+            Paragraph(f"<b>ELABORÓ / RECIBIDO:</b><br/><br/><br/>_________________________________<br/><b>{meta['elaborado_por']}</b>", sig_style),
+            Paragraph(f"<b>ENTREGADO BODEGA:</b><br/><br/><br/>_________________________________<br/><b>{meta['entregado_por']}</b>", sig_style),
+            Paragraph(f"<b>VALIDÓ / AUTORIZÓ:</b><br/><br/><br/>_________________________________<br/><b>{meta['validado_por']}</b>", sig_style)
+        ]]
+        t_firmas = Table(firma_data, colWidths=[185, 185, 185])
+        elements.append(t_firmas)
+        if i < len(metadata_actas) - 1:
+            elements.append(PageBreak())
+
+    doc.build(elements)
+    output_pdf.seek(0)
+    return output_pdf.getvalue()
+
 def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unificado_bytes):
     df_lotes = cargar_excel_seguro(excel_lotes_bytes)
     df_unificado = cargar_excel_seguro(excel_unificado_bytes)
@@ -309,82 +380,15 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     wb.save(output_excel)
     output_excel.seek(0)
 
-    # PDF output
-    output_pdf = io.BytesIO()
-    doc = SimpleDocTemplate(output_pdf, pagesize=letter, rightMargin=18, leftMargin=18, topMargin=20, bottomMargin=20)
-    elements = []
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontName='Helvetica-Bold', fontSize=10, alignment=1, textColor=colors.HexColor('#1F4E78'))
-    subtitle_style = ParagraphStyle('SubStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=7.5, alignment=1, textColor=colors.darkgray)
-    meta_style = ParagraphStyle('MetaStyle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8, alignment=0, textColor=colors.black)
-    cell_style = ParagraphStyle('CellStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=6.5)
-    cell_center = ParagraphStyle('CellCenter', parent=styles['Normal'], fontName='Helvetica', fontSize=6.5, alignment=1)
-    cell_red = ParagraphStyle('CellRed', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=6.5, textColor=colors.HexColor('#C00000'))
-    cell_red_center = ParagraphStyle('CellRedCenter', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=6.5, textColor=colors.HexColor('#C00000'), alignment=1)
-    sig_style = ParagraphStyle('SigStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=6.5, alignment=1)
-
-    for i, meta in enumerate(metadata_actas):
-        p_name_actual = meta['nombre_pdf']
-        df_acta_actual = df_final[df_final['PDF Origen'] == p_name_actual]
-        if df_acta_actual.empty:
-            continue
-
-        elements.append(Paragraph("HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO", title_style))
-        elements.append(Paragraph(f"ACTA OFICIAL DE DISPENSACIÓN Y CRUCE DE STOCK (FEFO) - Archivo: {p_name_actual}", subtitle_style))
-        elements.append(Spacer(1, 4))
-        elements.append(Paragraph(f"<b>SERVICIO:</b> {meta['servicio']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>EMISIÓN:</b> {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}", meta_style))
-        elements.append(Spacer(1, 4))
-
-        table_data = [['Nro.', 'Código', 'SKU', 'Dispositivo Médico', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock']]
-        for _, row in df_acta_actual.iterrows():
-            is_red = row['Alerta_Rojo'] or (row['Stock Bodega'] <= 0)
-            c_style = cell_red if is_red else cell_style
-            c_style_ctr = cell_red_center if is_red else cell_center
-            table_data.append([
-                str(row['Nro.']),
-                Paragraph(str(row['Código']), c_style_ctr),
-                Paragraph(str(row['SKU']), c_style_ctr),
-                Paragraph(str(row['Dispositivo Médico']), c_style),
-                str(int(row['Cant. Ap.'])),
-                Paragraph(str(row['Lotes y Cantidades a Despachar']), c_style),
-                Paragraph(str(row['Fechas Caducidad']), c_style),
-                Paragraph(f"{row['Stock Bodega']:,.0f}", c_style_ctr)
-            ])
-
-        t = Table(table_data, colWidths=[20, 45, 55, 135, 30, 135, 65, 36])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1F4E78')),
-            ('TEXTCOLOR', (0,0), (-1,0), colors.white),
-            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0,0), (-1,0), 7),
-            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('BOTTOMPADDING', (0,0), (-1,0), 3),
-            ('TOPPADDING', (0,0), (-1,0), 3),
-            ('GRID', (0,0), (-1,-1), 0.5, colors.lightgrey),
-        ]))
-        elements.append(t)
-        elements.append(Spacer(1, 10))
-
-        firma_data = [[
-            Paragraph(f"<b>ELABORÓ / RECIBIDO:</b><br/><br/><br/>_________________________________<br/><b>{meta['elaborado_por']}</b>", sig_style),
-            Paragraph(f"<b>ENTREGADO BODEGA:</b><br/><br/><br/>_________________________________<br/><b>{meta['entregado_por']}</b>", sig_style),
-            Paragraph(f"<b>VALIDÓ / AUTORIZÓ:</b><br/><br/><br/>_________________________________<br/><b>{meta['validado_por']}</b>", sig_style)
-        ]]
-        t_firmas = Table(firma_data, colWidths=[185, 185, 185])
-        elements.append(t_firmas)
-        if i < len(metadata_actas) - 1:
-            elements.append(PageBreak())
-
-    doc.build(elements)
-    output_pdf.seek(0)
+    # Generar PDF inicial
+    res_pdf_bytes = generar_pdf_actas(df_final, metadata_actas)
 
     total_req = len(lista_pdfs)
     total_items = len(df_final)
     cant_aprobada = int(df_final['Cant. Ap.'].sum())
     alertas = int(df_final['Alerta_Rojo'].sum())
 
-    return output_excel.getvalue(), output_pdf.getvalue(), total_req, total_items, cant_aprobada, alertas, df_final, metadata_actas
+    return output_excel.getvalue(), res_pdf_bytes, total_req, total_items, cant_aprobada, alertas, df_final, metadata_actas
 
 # Botón de ejecución en lote
 if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
@@ -457,9 +461,13 @@ with tab_matriz:
     else:
         st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote**.")
 
-# PESTAÑA 2: ACTAS OFICIALES (CON CAMPOS EDITABLES DE FIRMAS)
+# PESTAÑA 2: ACTAS OFICIALES (CON ACTIVACIÓN DE EDICIÓN Y BOTÓN DE GUARDADO)
 with tab_actas:
     if 'df_resultado' in st.session_state and 'meta_actas' in st.session_state:
+        
+        # Botón de activación para modificar firmas
+        modo_edicion = st.toggle("✏️ Activar modo de edición de firmas", value=False)
+
         meta_list = st.session_state['meta_actas']
         servicios_disponibles = [m['servicio'] for m in meta_list]
         servicios_disponibles_unicos = list(dict.fromkeys(servicios_disponibles))
@@ -526,36 +534,95 @@ with tab_actas:
             cols_acta = ['Nro.', 'Código', 'Dispositivo Médico', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock Bodega']
             st.dataframe(df_acta[cols_acta].style.apply(color_acta_rows, axis=1), use_container_width=True, hide_index=True)
 
-            # BLOQUE DE FIRMAS OFICIAL CON CAMPOS EDITABLES PARA DIGITAR NOMBRES
+            # BLOQUE DE FIRMAS
             st.markdown("""
                 <div style="background-color: #1f4e78; color: white; text-align: center; font-weight: bold; font-size: 12px; padding: 6px; border-radius: 4px; margin-top: 25px; margin-bottom: 15px;">
-                    FIRMAS DE CONFORMIDAD Y RESPONSABILIDAD OFICIAL (EDITABLES)
+                    FIRMAS DE CONFORMIDAD Y RESPONSABILIDAD OFICIAL
                 </div>
             """, unsafe_allow_html=True)
 
             f_col1, f_col2, f_col3 = st.columns(3)
-            with f_col1:
-                st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
-                st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">ELABORÓ / RECIBIDO:</div>', unsafe_allow_html=True)
-                nuevo_elab = st.text_input("Nombre Elaboró / Recibido", value=meta['elaborado_por'], key=f"elab_{idx}", label_visibility="collapsed")
-                st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Servicio Solicitante</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+            
+            if modo_edicion:
+                with f_col1:
+                    st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
+                    st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">ELABORÓ / RECIBIDO:</div>', unsafe_allow_html=True)
+                    nuevo_elab = st.text_input("Elaboró", value=meta['elaborado_por'], key=f"elab_{idx}", label_visibility="collapsed")
+                    st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Servicio Solicitante</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-            with f_col2:
-                st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
-                st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">ENTREGADO BODEGA:</div>', unsafe_allow_html=True)
-                nuevo_entre = st.text_input("Nombre Entregado Bodega", value=meta['entregado_por'], key=f"entre_{idx}", label_visibility="collapsed")
-                st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Bodega Central / Farmacia</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                with f_col2:
+                    st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
+                    st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">ENTREGADO BODEGA:</div>', unsafe_allow_html=True)
+                    nuevo_entre = st.text_input("Entregado", value=meta['entregado_por'], key=f"entre_{idx}", label_visibility="collapsed")
+                    st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Bodega Central / Farmacia</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-            with f_col3:
-                st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
-                st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">VALIDÓ / AUTORIZÓ:</div>', unsafe_allow_html=True)
-                nuevo_val = st.text_input("Nombre Validó / Autorizó", value=meta['validado_por'], key=f"val_{idx}", label_visibility="collapsed")
-                st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Jefatura / Responsable</div>', unsafe_allow_html=True)
-                st.markdown('</div>', unsafe_allow_html=True)
+                with f_col3:
+                    st.markdown('<div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; background-color: #fafbfc;">', unsafe_allow_html=True)
+                    st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">VALIDÓ / AUTORIZÓ:</div>', unsafe_allow_html=True)
+                    nuevo_val = st.text_input("Validó", value=meta['validado_por'], key=f"val_{idx}", label_visibility="collapsed")
+                    st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Jefatura / Responsable</div>', unsafe_allow_html=True)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-            # Actualizar nombres en tiempo real si el usuario digita nuevos datos
-            meta_list[idx]['elaborado_por'] = nuevo_elab
-            meta_list[idx]['entregado_por'] = nuevo_entre
-            meta
+                # Asignar valores temporales en metadatos
+                meta_list[idx]['elaborado_por'] = nuevo_elab
+                meta_list[idx]['entregado_por'] = nuevo_entre
+                meta_list[idx]['validado_por'] = nuevo_val
+
+                # Botón para guardar modificaciones y actualizar el PDF
+                if st.button(f"💾 Guardar Cambios de Firmas ({p_name})", key=f"btn_save_{idx}", type="primary"):
+                    st.session_state['res_pdf'] = generar_pdf_actas(st.session_state['df_resultado'], meta_list)
+                    st.success("¡Cambios guardados con éxito! El PDF ya está actualizado con los nuevos nombres.")
+            else:
+                # Vista estática de los nombres actuales
+                with f_col1:
+                    st.markdown(f"""
+                        <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
+                            <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">ELABORÓ / RECIBIDO:</div>
+                            <div style="height: 30px;"></div>
+                            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['elaborado_por']}</div>
+                            <div style="font-size: 10px; color: gray;">Servicio Solicitante</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                with f_col2:
+                    st.markdown(f"""
+                        <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
+                            <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">ENTREGADO BODEGA:</div>
+                            <div style="height: 30px;"></div>
+                            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['entregado_por']}</div>
+                            <div style="font-size: 10px; color: gray;">Bodega Central / Farmacia</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                with f_col3:
+                    st.markdown(f"""
+                        <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
+                            <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">VALIDÓ / AUTORIZÓ:</div>
+                            <div style="height: 30px;"></div>
+                            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['validado_por']}</div>
+                            <div style="font-size: 10px; color: gray;">Jefatura / Responsable</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+            st.markdown("</div><br>", unsafe_allow_html=True)
+
+    else:
+        st.info("ℹ️ Ejecute el cruce FEFO para visualizar el formato interactivo de las Actas Oficiales.")
+
+# PESTAÑA 3: LOTES Y CADUCIDADES
+with tab_lotes:
+    st.subheader("📊 Lotes y Caducidades Registradas")
+    if 'df_resultado' in st.session_state:
+        st.dataframe(st.session_state['df_resultado'][['Nro.', 'PDF Origen', 'Servicio', 'Dispositivo Médico', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad']], use_container_width=True, hide_index=True)
+    else:
+        st.info("Cargue los archivos para ver la distribución de lotes y fechas de caducidad.")
+
+# PESTAÑA 4: PLANTILLAS Y AYUDA
+with tab_ayuda:
+    st.subheader("💡 Plantillas y Ayuda del Sistema")
+    st.markdown("""
+    * **Paso 1:** Suba sus archivos PDF con los pedidos de requisición de los diferentes servicios hospitalarios.
+    * **Paso 2:** Cargue el Excel de existencias por lote y fecha de caducidad (`F. Cad`).
+    * **Paso 3:** Cargue el archivo Excel unificado de stock general de bodega o farmacia.
+    * **Paso 4:** Presione el botón **Ejecutar Cruce FEFO en Lote** para consolidar automáticamente todo el sistema con el formato oficial.
+    """)
