@@ -457,7 +457,7 @@ with tab_matriz:
     else:
         st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote**.")
 
-# PESTAÑA 2: ACTAS OFICIALES (CORREGIDO SIN CÓDIGO HTML VISIBLE)
+# PESTAÑA 2: ACTAS OFICIALES (CON BLOQUE DE FIRMAS OFICIAL INCLUIDO)
 with tab_actas:
     if 'df_resultado' in st.session_state and 'meta_actas' in st.session_state:
         meta_list = st.session_state['meta_actas']
@@ -498,7 +498,6 @@ with tab_actas:
             num_alertas = df_acta['Alerta_Rojo'].sum()
             hora_actual = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
 
-            # Renderizado limpio usando componentes nativos de Streamlit para evitar código plano
             st.markdown('<div class="acta-document-box">', unsafe_allow_html=True)
             st.markdown('<div class="acta-header-title">HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO</div>', unsafe_allow_html=True)
             st.markdown(f'<div class="acta-sub-title">ACTA OFICIAL DE DISPENSACIÓN Y CRUCE DE STOCK (FEFO)<br><span style="font-weight:normal; font-size:12px; color:gray;">Archivo de Origen: {p_name}</span></div>', unsafe_allow_html=True)
@@ -526,6 +525,42 @@ with tab_actas:
 
             cols_acta = ['Nro.', 'Código', 'Dispositivo Médico', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock Bodega']
             st.dataframe(df_acta[cols_acta].style.apply(color_acta_rows, axis=1), use_container_width=True, hide_index=True)
+
+            # BLOQUE DE FIRMAS OFICIAL IDÉNTICO A LA REFERENCIA
+            st.markdown("""
+                <div style="background-color: #1f4e78; color: white; text-align: center; font-weight: bold; font-size: 12px; padding: 6px; border-radius: 4px; margin-top: 25px; margin-bottom: 15px;">
+                    FIRMAS DE CONFORMIDAD Y RESPONSABILIDAD OFICIAL
+                </div>
+            """, unsafe_allow_html=True)
+
+            f_col1, f_col2, f_col3 = st.columns(3)
+            with f_col1:
+                st.markdown(f"""
+                    <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
+                        <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">ELABORÓ / RECIBIDO:</div>
+                        <div style="height: 40px;"></div>
+                        <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['elaborado_por']}</div>
+                        <div style="font-size: 10px; color: gray;">Servicio Solicitante</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            with f_col2:
+                st.markdown(f"""
+                    <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
+                        <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">ENTREGADO BODEGA:</div>
+                        <div style="height: 40px;"></div>
+                        <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['entregado_por']}</div>
+                        <div style="font-size: 10px; color: gray;">Bodega Central / Farmacia</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            with f_col3:
+                st.markdown(f"""
+                    <div style="border: 1px solid #d0d7de; border-radius: 6px; padding: 15px; text-align: center; background-color: #fafbfc;">
+                        <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">VALIDÓ / AUTORIZÓ:</div>
+                        <div style="height: 40px;"></div>
+                        <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['validado_por']}</div>
+                        <div style="font-size: 10px; color: gray;">Jefatura / Responsable</div>
+                    </div>
+                """, unsafe_allow_html=True)
 
             st.markdown("</div><br>", unsafe_allow_html=True)
 
