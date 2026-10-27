@@ -12,7 +12,7 @@ from reportlab.lib import colors
 import io
 import datetime
 
-# Configuración inicial de la página
+# Configuración de página ancha
 st.set_page_config(
     page_title="Cruce Hospitalario FEFO - Hospital Vicente Corral Moscoso",
     page_icon="🏥",
@@ -20,18 +20,52 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Estilos CSS idénticos a la interfaz institucional de AI Studio
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stApp { background-color: #f8f9fa; }
+
+    /* Barra Superior de Navegación */
+    .top-nav-container {
+        background: #ffffff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        border: 1px solid #e0e0e0;
+    }
+    
+    /* Tarjetas de Métricas */
+    .metric-card {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        text-align: left;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# Encabezado superior institucional
-st.markdown("### 🏥 Cruce Hospitalario FEFO - Hospital Vicente Corral Moscoso")
+# Encabezado Superior Estilizado con Pestañas
+st.markdown("""
+    <div class="top-nav-container">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">🏥</span>
+            <div>
+                <strong>Cruce Hospitalario FEFO</strong><br>
+                <span style="font-size: 11px; color: gray;">Hospital Provincial General Docente Vicente Corral Moscoso • Bodega & Farmacia</span>
+            </div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
-# PESTAÑAS SUPERIORES IDÉNTICAS A LA INTERFAZ DE LA IMAGEN
+# Pestañas Superiores de Navegación
 tab_matriz, tab_actas, tab_lotes, tab_ayuda = st.tabs([
     "Matriz Consolidada", 
     "Actas Oficiales", 
@@ -39,7 +73,7 @@ tab_matriz, tab_actas, tab_lotes, tab_ayuda = st.tabs([
     "Plantillas y Ayuda"
 ])
 
-# MÓDULO DE CARGA EN LOTE (Siempre disponible)
+# Módulo de Carga en Lote desplegable
 with st.expander("📂 Módulo de Carga en Lote (Requisiciones & Inventarios)", expanded=True):
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -49,7 +83,7 @@ with st.expander("📂 Módulo de Carga en Lote (Requisiciones & Inventarios)", 
     with col3:
         uploaded_unificado = st.file_uploader("3. Excel Unificado (Stock General)", type=["xlsx", "xls"], key="unif_up")
 
-# Funciones de procesamiento seguro
+# Funciones de procesamiento seguro y lógica FEFO
 def cargar_excel_seguro(file_bytes):
     try:
         return pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
@@ -170,9 +204,9 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
 
                 if lotes_prod.empty or float(stock_bodega) <= 0:
                     item_data = {
+                        'Nro.': pdf_row['Nro.'],
                         'PDF Origen': nombre_pdf,
                         'Servicio': servicio_nombre,
-                        'Nro.': pdf_row['Nro.'],
                         'Código': str(codigo),
                         'SKU': sku,
                         'Dispositivo Médico': pdf_row['Dispositivo Médico'],
@@ -208,9 +242,9 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                         fechas_info.append("STOCK INSUFICIENTE")
                         
                     item_data = {
+                        'Nro.': pdf_row['Nro.'],
                         'PDF Origen': nombre_pdf,
                         'Servicio': servicio_nombre,
-                        'Nro.': pdf_row['Nro.'],
                         'Código': str(codigo),
                         'SKU': sku,
                         'Dispositivo Médico': pdf_row['Dispositivo Médico'],
@@ -240,7 +274,7 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     wb = Workbook()
     ws = wb.active
     ws.title = "Consolidado Lote FEFO"
-    headers = ['PDF Origen', 'Servicio', 'Nro.', 'Código', 'SKU', 'Dispositivo Médico', 'Cant. Sol.', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock Bodega']
+    headers = ['Nro.', 'PDF Origen', 'Servicio', 'Código', 'SKU', 'Dispositivo Médico', 'Cant. Sol.', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock Bodega']
     ws.append(headers)
     
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
@@ -253,7 +287,7 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
 
     for r_idx, row in df_final.iterrows():
         ws.append([
-            row['PDF Origen'], row['Servicio'], row['Nro.'], row['Código'], row['SKU'], 
+            row['Nro.'], row['PDF Origen'], row['Servicio'], row['Código'], row['SKU'], 
             row['Dispositivo Médico'], row['Cant. Sol.'], row['Cant. Ap.'], 
             row['Lotes y Cantidades a Despachar'], row['Fechas Caducidad'], row['Stock Bodega']
         ])
@@ -337,7 +371,7 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
 
     return output_excel.getvalue(), output_pdf.getvalue(), total_req, total_items, cant_aprobada, alertas, df_final
 
-# Botón para ejecutar cruce en lote
+# Botón de ejecución en lote
 if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
     if st.button("🚀 Ejecutar Cruce FEFO en Lote", type="primary", use_container_width=True):
         with st.spinner("Procesando datos institucionales..."):
@@ -359,7 +393,7 @@ if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
 # CONTENIDO DE LA PESTAÑA: MATRIZ CONSOLIDADA
 with tab_matriz:
     if 'df_resultado' in st.session_state:
-        # Tarjetas de métricas idénticas a la imagen de AI Studio
+        # Tarjetas de Métricas idénticas a la imagen
         m1, m2, m3, m4, m5, m6 = st.columns(6)
         with m1:
             st.metric("Requisiciones", st.session_state['req_n'], "Servicios")
@@ -377,17 +411,20 @@ with tab_matriz:
 
         st.markdown("---")
 
-        # Barra de búsqueda, filtros de estado y botón de descarga XLSX
-        f_col1, f_col2, f_col3 = st.columns([2, 1, 1])
+        # Barra de búsqueda, filtros de estado y botones de descarga XLSX / PDF idénticos
+        f_col1, f_col2, f_col3, f_col4 = st.columns([2, 1, 1, 1])
         with f_col1:
             busqueda = st.text_input("🔍 Buscar por dispositivo, código, SKU, lote o PDF...", "")
         with f_col2:
-            filtro_estado = st.selectbox("Filtro Estado", ["Todos", "Con Alerta / Faltante", "100% Cubiertos"])
+            filtro_estado = st.selectbox("Filtro", ["Todos", "Con Alerta / Faltante", "100% Cubiertos"])
         with f_col3:
             st.write("")
             st.download_button("📥 Descargar XLSX", data=st.session_state['res_excel'], file_name="Consolidado_FEFO.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        with f_col4:
+            st.write("")
+            st.download_button("📥 Descargar PDF", data=st.session_state['res_pdf'], file_name="Actas_Oficiales.pdf", mime="application/pdf", use_container_width=True)
 
-        # Filtrado dinámico
+        # Filtrado dinámico de datos
         df_mostrar = st.session_state['df_resultado']
         if busqueda:
             mask = df_mostrar.astype(str).apply(lambda x: x.str.contains(busqueda, case=False)).any(axis=1)
@@ -398,16 +435,22 @@ with tab_matriz:
         elif "100%" in filtro_estado:
             df_mostrar = df_mostrar[df_mostrar['Alerta_Rojo'] == False]
 
-        st.dataframe(df_mostrar, use_container_width=True, hide_index=True)
+        # Función para colorear las filas con alerta en rojo claro tal como se ve en la imagen
+        def color_fefo_rows(row):
+            if row.get('Alerta_Rojo', False):
+                return ['background-color: #fde8e4; color: #c00000; font-weight: bold'] * len(row)
+            return [''] * len(row)
+
+        st.dataframe(df_mostrar.style.apply(color_fefo_rows, axis=1), use_container_width=True, hide_index=True)
     else:
-        st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote** para habilitar la matriz y las métricas.")
+        st.info("ℹ️ Cargue los archivos en el módulo superior y haga clic en **Ejecutar Cruce FEFO en Lote** para habilitar la matriz y las métricas idénticas a la vista previa.")
 
 # CONTENIDO DE LA PESTAÑA: ACTAS OFICIALES
 with tab_actas:
     st.subheader("📑 Actas Oficiales de Dispensación (PDF)")
     if 'res_pdf' in st.session_state:
-        st.success("Actas oficiales generadas correctamente y listas para descarga.")
-        st.download_button("📥 Descargar Actas en PDF", data=st.session_state['res_pdf'], file_name="Actas_Oficiales.pdf", mime="application/pdf")
+        st.success("Actas oficiales generadas correctamente y listas para descarga institucional.")
+        st.download_button("📥 Descargar Actas Oficiales en PDF", data=st.session_state['res_pdf'], file_name="Actas_Oficiales.pdf", mime="application/pdf")
     else:
         st.info("Ejecute el cruce FEFO para generar las actas oficiales.")
 
@@ -415,16 +458,16 @@ with tab_actas:
 with tab_lotes:
     st.subheader("📊 Lotes y Caducidades Registradas")
     if 'df_resultado' in st.session_state:
-        st.dataframe(st.session_state['df_resultado'][['PDF Origen', 'Servicio', 'Dispositivo Médico', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad']], use_container_width=True, hide_index=True)
+        st.dataframe(st.session_state['df_resultado'][['Nro.', 'PDF Origen', 'Servicio', 'Dispositivo Médico', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad']], use_container_width=True, hide_index=True)
     else:
         st.info("Cargue los archivos para ver la distribución de lotes y fechas de caducidad.")
 
 # CONTENIDO DE LA PESTAÑA: PLANTILLAS Y AYUDA
 with tab_ayuda:
-    st.subheader("💡 Plantillas y Ayuda")
+    st.subheader("💡 Plantillas y Ayuda del Sistema")
     st.markdown("""
     * **Paso 1:** Suba sus archivos PDF con los pedidos de requisición de los diferentes servicios hospitalarios.
     * **Paso 2:** Cargue el Excel de existencias por lote y fecha de caducidad (`F. Cad`).
     * **Paso 3:** Cargue el archivo Excel unificado de stock general de bodega o farmacia.
-    * **Paso 4:** Presione el botón **Ejecutar Cruce FEFO en Lote** para consolidar automáticamente todo el sistema.
+    * **Paso 4:** Presione el botón **Ejecutar Cruce FEFO en Lote** para consolidar automáticamente todo el sistema con el formato oficial.
     """)
