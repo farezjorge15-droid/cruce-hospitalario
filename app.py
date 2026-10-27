@@ -1,3 +1,4 @@
+import streamlit as st
 import pypdf
 import pandas as pd
 import re
@@ -10,6 +11,27 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 import io
 import datetime
+
+# Configuración inicial de la página
+st.set_page_config(page_title="Cruce Hospitalario FEFO", layout="wide")
+
+st.title("🏥 Cruce Hospitalario FEFO - Hospital Vicente Corral Moscoso")
+st.write("Cargue sus archivos PDF de requisiciones y los Excel de existencias para realizar el cruce FEFO de lote.")
+
+# Secciones de Carga de Archivos
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.subheader("1. Requisiciones PDF")
+    uploaded_pdfs = st.file_uploader("Subir PDFs de pedidos", type=["pdf"], accept_multiple_files=True)
+
+with col2:
+    st.subheader("2. Excel de Lotes")
+    uploaded_lotes = st.file_uploader("Subir reporte de lotes", type=["xlsx", "xls"])
+
+with col3:
+    st.subheader("3. Stock General")
+    uploaded_unificado = st.file_uploader("Subir stock unificado", type=["xlsx", "xls"])
 
 def cargar_excel_seguro(file_bytes):
     """Carga segura de Excel compatible con tus archivos originales."""
@@ -27,24 +49,17 @@ def clean_exact(s):
         return ""
     s = unicodedata.normalize('NFD', s).encode('ascii', 'ignore').decode("utf-8")
     s = s.upper().strip()
-    # Elimina puntuación y caracteres especiales para evitar desajustes por guiones o comas
     s = re.sub(r'[^A-Z0-9\s]', '', s)
     s = re.sub(r'\s+', ' ', s)
     return s
 
 def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unificado_bytes):
-    """
-    Procesa una lista de PDFs en lote, realizando el cruce FEFO 
-    y generando un Excel y un PDF consolidados con SKU visible.
-    """
-    
     df_lotes = cargar_excel_seguro(excel_lotes_bytes)
     df_unificado = cargar_excel_seguro(excel_unificado_bytes)
 
     df_lotes['clean_name'] = df_lotes['Producto'].apply(clean_exact)
     df_unificado['clean_name'] = df_unificado['Producto'].apply(clean_exact)
 
-    # Agrupación y ordenamiento FEFO previo
     df_lotes_grouped = df_lotes.groupby(['clean_name', 'Lote', 'F. Cad'], as_index=False)['Existen'].sum()
     df_lotes_grouped['F. Cad DT'] = pd.to_datetime(df_lotes_grouped['F. Cad'], errors='coerce')
     df_lotes_grouped = df_lotes_grouped.sort_values(by=['clean_name', 'F. Cad DT'], ascending=[True, True])
@@ -63,9 +78,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         except Exception as e:
             continue
 
-        # =========================================================================
-        # EXTRACCIÓN DEL SERVICIO SOLICITANTE
-        # =========================================================================
         servicio_nombre = "GENERAL"
         match_serv = re.search(r'Servicio\s*[:]\s*([^\r\n]+)', pdf_text, re.IGNORECASE)
         if match_serv:
@@ -76,9 +88,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
             if len(raw_serv) > 1:
                 servicio_nombre = raw_serv
 
-        # =========================================================================
-        # EXTRACCIÓN DE FIRMANTES ELECTRÓNICOS
-        # =========================================================================
         firmantes_encontrados = []
         texto_plano_continuo = re.sub(r'[\r\n]+', ' ', pdf_text)
         matches_firma = re.finditer(r'(?:Firmado\s+electr[oó]nicamente\s+por|por\s*[:])\s*([A-ZÁÉÍÓÚÑ\s]{5,50})', texto_plano_continuo, re.IGNORECASE)
@@ -90,20 +99,10 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                 if nombre_valido not in firmantes_encontrados:
                     firmantes_encontrados.append(nombre_valido)
 
-        if len(firmantes_encontrados) < 2:
-            for linea in pdf_text.split('\n'):
-                l_up = linea.strip().upper()
-                if any(n in l_up for n in ['CANTOS ESPINOZA', 'DELEG SARI', 'YUQUILIMA PUMA', 'CABRERA ZENTENO', 'ROJAS BURI']):
-                    if l_up not in firmantes_encontrados:
-                        firmantes_encontrados.append(l_up)
-
         elaborado_por = firmantes_encontrados[0] if len(firmantes_encontrados) > 0 else "RESPONSABLE DE SERVICIO"
         validado_por = firmantes_encontrados[1] if len(firmantes_encontrados) > 1 else ("DANIEL GUILLERMO DELEG SARI" if "EMERGENCIA" in servicio_nombre.upper() else "XIMENA KARINA CABRERA ZENTENO")
         entregado_por = "GUARDALMACÉN / DESPACHADOR"
 
-        # =========================================================================
-        # EXTRACCIÓN DE ÍTEMS
-        # =========================================================================
         idx_tabla = pdf_text.find("Nro.")
         texto_items = pdf_text[idx_tabla:] if idx_tabla != -1 else pdf_text
         clean_blob = re.sub(r'\s+', ' ', texto_items)
@@ -139,14 +138,8 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                 match_unif = df_unificado[df_unificado['clean_name'] == p_name]
                 if not match_unif.empty:
                     codigo = match_unif.iloc[0].get('Código', match_unif.iloc[0].get('Codigo', 'SIN-CODIGO'))
-                    
-                    # Extracción robusta del SKU
                     col_sku = [c for c in match_unif.columns if str(c).strip().upper() == 'SKU']
-                    if col_sku:
-                        sku_val = match_unif.iloc[0][col_sku[0]]
-                    else:
-                        sku_val = match_unif.iloc[0].get('SKU', 'SIN-SKU')
-                    
+                    sku_val = match_unif.iloc[0][col_sku[0]] if col_sku else match_unif.iloc[0].get('SKU', 'SIN-SKU')
                     sku = str(sku_val).strip() if pd.notna(sku_val) else 'SIN-SKU'
 
                     col_bodega = [c for c in match_unif.columns if 'BOD' in str(c).upper() or 'FARM' in str(c).upper()][0] if [c for c in match_unif.columns if 'BOD' in str(c).upper()] else match_unif.columns[-1]
@@ -184,7 +177,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                         disp_lote = l_row['Existen']
                         if pd.isna(disp_lote):
                             continue
-                        
                         if disp_lote >= cant_pendiente:
                             cant_a_usar = cant_pendiente
                             cant_pendiente = 0
@@ -214,7 +206,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                         'Stock Bodega': float(stock_bodega),
                         'Alerta_Rojo': False
                     }
-                
                 todos_los_resultados.append(item_data)
 
         metadata_actas.append({
@@ -229,9 +220,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     if df_final.empty:
         return None, None
 
-    # =========================================================================
-    # 4. GENERACIÓN DE REPORTE EXCEL CONSOLIDADO
-    # =========================================================================
     output_excel = io.BytesIO()
     wb = Workbook()
     ws = wb.active
@@ -275,9 +263,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     wb.save(output_excel)
     output_excel.seek(0)
 
-    # =========================================================================
-    # 5. GENERACIÓN DE ACTAS OFICIALES EN PDF (CONSOLIDADAS POR LOTE)
-    # =========================================================================
     output_pdf = io.BytesIO()
     doc = SimpleDocTemplate(output_pdf, pagesize=letter, rightMargin=18, leftMargin=18, topMargin=20, bottomMargin=20)
     elements = []
@@ -301,11 +286,9 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         elements.append(Paragraph("HOSPITAL PROVINCIAL GENERAL DOCENTE VICENTE CORRAL MOSCOSO", title_style))
         elements.append(Paragraph(f"ACTA OFICIAL DE DISPENSACIÓN Y CRUCE DE STOCK (FEFO) - Archivo: {p_name_actual}", subtitle_style))
         elements.append(Spacer(1, 4))
-
         elements.append(Paragraph(f"<b>SERVICIO:</b> {meta['servicio']} &nbsp;&nbsp;|&nbsp;&nbsp; <b>EMISIÓN:</b> {datetime.datetime.now().strftime('%d/%m/%Y %H:%M')}", meta_style))
         elements.append(Spacer(1, 4))
 
-        # Se agrega la columna 'SKU' en la cabecera de la tabla del acta
         table_data = [['Nro.', 'Código', 'SKU', 'Dispositivo Médico', 'Cant. Ap.', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad', 'Stock']]
         
         for _, row in df_acta_actual.iterrows():
@@ -324,7 +307,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                 Paragraph(f"{row['Stock Bodega']:,.0f}", c_style_ctr)
             ])
 
-        # Se ajustan los anchos de columna (colWidths) para que quepa perfectamente el SKU en la hoja tamaño carta
         t = Table(table_data, colWidths=[20, 45, 55, 135, 30, 135, 65, 36])
         t.setStyle(TableStyle([
             ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1F4E78')),
@@ -358,11 +340,28 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         ]))
 
         elements.append(t_firmas)
-
         if i < len(metadata_actas) - 1:
             elements.append(PageBreak())
 
     doc.build(elements)
     output_pdf.seek(0)
-
     return output_excel.getvalue(), output_pdf.getvalue()
+
+# Botón para ejecutar el procesamiento cuando los archivos estén listos
+if uploaded_pdfs and uploaded_lotes and uploaded_unificado:
+    if st.button("Ejecutar Cruce FEFO en Lote 🚀", type="primary"):
+        with st.spinner("Procesando archivos..."):
+            lista_tuplas_pdfs = [(p.name, p.read()) for p in uploaded_pdfs]
+            excel_bytes = uploaded_lotes.read()
+            unif_bytes = uploaded_unificado.read()
+            
+            res_excel, res_pdf = procesar_cruce_hospitalario_lote(lista_tuplas_pdfs, excel_bytes, unif_bytes)
+            
+            if res_excel:
+                st.success("¡Proceso completado con éxito!")
+                st.download_button("📥 Descargar Excel Consolidado", data=res_excel, file_name="Consolidado_FEFO.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                st.download_button("📥 Descargar Actas en PDF", data=res_pdf, file_name="Actas_Oficiales.pdf", mime="application/pdf")
+            else:
+                st.error("No se pudieron extraer datos válidos de las requisiciones o no hubo coincidencia de productos.")
+else:
+    st.info("⚠️ Por favor, suba todos los archivos requeridos (PDFs, Excel de Lotes y Stock General) para habilitar el procesamiento.")
