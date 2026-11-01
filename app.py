@@ -233,12 +233,10 @@ def clean_exact(s):
     return s
 
 def detectar_columna_producto(df):
-    """Busca inteligentemente la columna del DataFrame que contiene las descripciones de productos."""
     for col in df.columns:
         col_str = str(col).strip().upper()
         if any(kw in col_str for kw in ['PRODUCTO', 'DISPOSITIVO', 'DESCRIPCION', 'DETALLE', 'ARTICULO', 'ITEM']):
             return col
-    # Si no hay coincidencia por nombre, busca la columna con mayor longitud promedio de texto
     max_len = -1
     best_col = df.columns[0]
     for col in df.columns:
@@ -330,43 +328,10 @@ def generar_pdf_actas(df_final, metadata_actas):
     output_pdf.seek(0)
     return output_pdf.getvalue()
 
-def buscar_coincidencia_producto(p_name, df_referencia):
-    """Realiza una búsqueda multinivel robusta (Exacta -> Subcadena -> Palabras Clave)."""
-    if df_referencia.empty:
-        return pd.DataFrame()
-    
-    # 1. Búsqueda exacta
-    match = df_referencia[df_referencia['clean_name'] == p_name]
-    if not match.empty:
-        return match
-
-    # 2. Búsqueda por subcadena (si el nombre del PDF está contenido en el Excel o viceversa)
-    match = df_referencia[df_referencia['clean_name'].str.contains(re.escape(p_name), na=False) | 
-                          pd.Series([p_name in x for x in df_referencia['clean_name']], index=df_referencia.index)]
-    if not match.empty:
-        return match
-
-    # 3. Búsqueda por coincidencia de palabras clave significativas (ej. palabras de más de 3 letras o números)
-    palabras = [w for w in p_name.split() if len(w) > 2 or w.isdigit()]
-    if palabras:
-        # Filtrar filas que contengan la mayoría o las palabras clave principales (ej. CATETER, 14, 18, etc.)
-        scores = []
-        for idx, row in df_referencia.iterrows():
-            c_name = row['clean_name']
-            score = sum(1 for w in palabras if w in c_name)
-            scores.append((score, idx))
-        scores.sort(key=lambda x: x[0], reverse=True)
-        if scores and scores[0][0] >= max(1, len(palabras) // 2):
-            best_idx = scores[0][1]
-            return df_referencia.loc[[best_idx]]
-
-    return pd.DataFrame()
-
 def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unificado_bytes):
     df_lotes = cargar_excel_seguro(excel_lotes_bytes)
     df_unificado = cargar_excel_seguro(excel_unificado_bytes)
 
-    # Detección inteligente de columnas de productos en los Excel
     col_prod_lotes = detectar_columna_producto(df_lotes)
     col_prod_unif = detectar_columna_producto(df_unificado)
 
@@ -399,7 +364,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         except Exception as e:
             continue
 
-        # Normalizar saltos de línea y espacios múltiples
         pdf_text_clean = re.sub(r'\s+', ' ', pdf_text)
 
         servicio_nombre = "GENERAL"
@@ -457,8 +421,8 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                 p_name = pdf_row['clean_name']
                 cant_pendiente = pdf_row['Cantidades Aprobadas']
                 
-                # Usar búsqueda robusta en unificado y lotes
-                match_unif = buscar_coincidencia_producto(p_name, df_unificado)
+                # Búsqueda estrictamente EXACTA del nombre completo del producto
+                match_unif = df_unificado[df_unificado['clean_name'] == p_name]
                 if not match_unif.empty:
                     codigo_val = match_unif.iloc[0].get(col_codigo, match_unif.iloc[0].get('Código', match_unif.iloc[0].get('Codigo', 'SIN-CODIGO'))) if col_codigo else match_unif.iloc[0].get('Código', 'SIN-CODIGO')
                     codigo = str(codigo_val).strip() if pd.notna(codigo_val) else 'SIN-CODIGO'
@@ -477,12 +441,8 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                     sku = 'SIN-SKU'
                     stock_bodega = 0.0
 
-                match_lotes_prod = buscar_coincidencia_producto(p_name, df_lotes_grouped[['clean_name']].drop_duplicates())
-                if not match_lotes_prod.empty:
-                    clean_name_encontrado = match_lotes_prod.iloc[0]['clean_name']
-                    lotes_prod = df_lotes_grouped[df_lotes_grouped['clean_name'] == clean_name_encontrado]
-                else:
-                    lotes_prod = pd.DataFrame()
+                # Búsqueda estrictamente EXACTA en lotes
+                lotes_prod = df_lotes_grouped[df_lotes_grouped['clean_name'] == p_name]
 
                 if lotes_prod.empty or float(stock_bodega) <= 0:
                     item_data = {
