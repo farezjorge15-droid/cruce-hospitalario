@@ -228,7 +228,7 @@ def clean_exact(s):
         return ""
     s = unicodedata.normalize('NFD', s).encode('ascii', 'ignore').decode("utf-8")
     s = s.upper().strip()
-    s = re.sub(r'[^A-Z0-9\s]', '', s)
+    s = re.sub(r'[^A-Z0-9\s#]', '', s)
     s = re.sub(r'\s+', ' ', s)
     return s
 
