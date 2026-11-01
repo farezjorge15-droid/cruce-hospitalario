@@ -1,3 +1,4 @@
+import streamlit as str_lit
 import streamlit as st
 import pypdf
 import pandas as pd
@@ -213,15 +214,31 @@ with st.expander("📂 Módulo de Carga en Lote (Requisiciones & Inventarios)", 
     with col3:
         uploaded_unificado = st.file_uploader("3. Excel Unificado (Stock General)", type=["xlsx", "xls"], key="unif_up")
 
-# Funciones de procesamiento seguro y lógica FEFO
-def cargar_excel_seguro(file_bytes):
+# Funciones de procesamiento seguro y lectura inteligente de Excel
+def cargar_excel_inteligente(file_bytes):
+    """Detecta automáticamente la fila de encabezados real en archivos de Excel institucionales."""
     try:
-        return pd.read_excel(io.BytesIO(file_bytes), engine='openpyxl')
+        df_raw = pd.read_excel(io.BytesIO(file_bytes), header=None, engine='openpyxl')
     except Exception:
         try:
-            return pd.read_excel(io.BytesIO(file_bytes), engine='xlrd')
+            df_raw = pd.read_excel(io.BytesIO(file_bytes), header=None, engine='xlrd')
         except Exception:
-            return pd.read_excel(io.BytesIO(file_bytes))
+            df_raw = pd.read_excel(io.BytesIO(file_bytes), header=None)
+
+    header_row = 0
+    for i in range(min(10, len(df_raw))):
+        fila_str = " ".join([str(val).upper() for val in df_raw.iloc[i].values if pd.notna(val)])
+        if any(kw in fila_str for kw in ['PRODUCTO', 'DISPOSITIVO', 'DESCRIPCION', 'LOTE', 'CODIGO', 'EXISTEN']):
+            header_row = i
+            break
+
+    try:
+        return pd.read_excel(io.BytesIO(file_bytes), header=header_row, engine='openpyxl')
+    except Exception:
+        try:
+            return pd.read_excel(io.BytesIO(file_bytes), header=header_row, engine='xlrd')
+        except Exception:
+            return pd.read_excel(io.BytesIO(file_bytes), header=header_row)
 
 def clean_exact(s):
     if not isinstance(s, str):
@@ -329,8 +346,8 @@ def generar_pdf_actas(df_final, metadata_actas):
     return output_pdf.getvalue()
 
 def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unificado_bytes):
-    df_lotes = cargar_excel_seguro(excel_lotes_bytes)
-    df_unificado = cargar_excel_seguro(excel_unificado_bytes)
+    df_lotes = cargar_excel_inteligente(excel_lotes_bytes)
+    df_unificado = cargar_excel_inteligente(excel_unificado_bytes)
 
     col_prod_lotes = detectar_columna_producto(df_lotes)
     col_prod_unif = detectar_columna_producto(df_unificado)
@@ -762,7 +779,7 @@ with tab_lotes:
     
     if uploaded_lotes is not None:
         try:
-            df_lotes_preview = cargar_excel_seguro(uploaded_lotes.read())
+            df_lotes_preview = cargar_excel_inteligente(uploaded_lotes.read())
             uploaded_lotes.seek(0)
             st.success(f"✅ Archivo de lotes cargado correctamente ({len(df_lotes_preview)} registros encontrados).")
             
