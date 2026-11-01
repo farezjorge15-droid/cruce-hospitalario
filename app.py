@@ -228,7 +228,7 @@ def clean_exact(s):
         return ""
     s = unicodedata.normalize('NFD', s).encode('ascii', 'ignore').decode("utf-8")
     s = s.upper().strip()
-    s = re.sub(r'[^A-Z0-9\s%\.\-\/\#]', '', s)
+    s = re.sub(r'[^A-Z0-9\s]', '', s)
     s = re.sub(r'\s+', ' ', s)
     return s
 
@@ -383,7 +383,7 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         
         for i in range(1, 100):
             # Patrón robusto tolerante a variaciones de espacios en blanco normalizados
-            pattern_general = r'(\d+)\s+([A-Za-z0-9\s%\.\-\/\(\)\#]+?)\s+(\d+)\s+(\d+)'
+            pattern_item = rf'(?:^|\s){i}\s+(.+?)\s*\(\s*AUTORIZADA[^\)]+\)\s*(\d+)\s+(\d+)'
             m = re.search(pattern_item, texto_items)
             if m:
                 desc = m.group(1).strip()
