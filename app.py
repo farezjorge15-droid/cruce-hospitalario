@@ -228,17 +228,9 @@ def clean_exact(s):
         return ""
     s = unicodedata.normalize('NFD', s).encode('ascii', 'ignore').decode("utf-8")
     s = s.upper().strip()
-    s = re.sub(r'[^A-Z0-9\s%\.\-\/\#]', '', s)
+    s = re.sub(r'[^A-Z0-9\s]', '', s)
     s = re.sub(r'\s+', ' ', s)
     return s
-
-def encontrar_columna(df, posibles_nombres):
-    for col in df.columns:
-        col_str = str(col).strip().upper()
-        for p in posibles_nombres:
-            if p in col_str:
-                return col
-    return None
 
 def generar_pdf_actas(df_final, metadata_actas):
     output_pdf = io.BytesIO()
@@ -317,22 +309,10 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     df_lotes = cargar_excel_seguro(excel_lotes_bytes)
     df_unificado = cargar_excel_seguro(excel_unificado_bytes)
 
-    # Detección dinámica y robusta de columnas en Excel de lotes
-    col_prod_lotes = encontrar_columna(df_lotes, ['PRODUCTO', 'DISPOSITIVO', 'DESCRIPCION', 'ITEM']) or (df_lotes.columns[5] if len(df_lotes.columns) > 5 else df_lotes.columns[0])
-    col_lote = encontrar_columna(df_lotes, ['LOTE']) or (df_lotes.columns[7] if len(df_lotes.columns) > 7 else df_lotes.columns[1])
-    col_fcad = encontrar_columna(df_lotes, ['CAD', 'VENCIMIENTO', 'FECHA']) or (df_lotes.columns[8] if len(df_lotes.columns) > 8 else df_lotes.columns[2])
-    col_existen = encontrar_columna(df_lotes, ['EXISTEN', 'STOCK', 'SALDO', 'CANTIDAD']) or (df_lotes.columns[10] if len(df_lotes.columns) > 10 else df_lotes.columns[3])
+    df_lotes['clean_name'] = df_lotes['Producto'].apply(clean_exact)
+    df_unificado['clean_name'] = df_unificado['Producto'].apply(clean_exact)
 
-    # Detección dinámica en Excel unificado
-    col_prod_unif = encontrar_columna(df_unificado, ['PRODUCTO', 'DISPOSITIVO', 'DESCRIPCION']) or (df_unificado.columns[5] if len(df_unificado.columns) > 5 else df_unificado.columns[0])
-    col_codigo = encontrar_columna(df_unificado, ['CODIGO', 'CÓDIGO'])
-    col_sku = encontrar_columna(df_unificado, ['SKU'])
-
-    df_lotes['clean_name'] = df_lotes[col_prod_lotes].apply(clean_exact)
-    df_unificado['clean_name'] = df_unificado[col_prod_unif].apply(clean_exact)
-
-    df_lotes_grouped = df_lotes.groupby(['clean_name', col_lote, col_fcad], as_index=False)[col_existen].sum()
-    df_lotes_grouped.rename(columns={col_lote: 'Lote', col_fcad: 'F. Cad', col_existen: 'Existen'}, inplace=True)
+    df_lotes_grouped = df_lotes.groupby(['clean_name', 'Lote', 'F. Cad'], as_index=False)['Existen'].sum()
     df_lotes_grouped['F. Cad DT'] = pd.to_datetime(df_lotes_grouped['F. Cad'], errors='coerce')
     df_lotes_grouped = df_lotes_grouped.sort_values(by=['clean_name', 'F. Cad DT'], ascending=[True, True])
 
@@ -350,11 +330,8 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         except Exception as e:
             continue
 
-        # CORRECCIÓN CLAVE: Normalizar saltos de línea y espacios múltiples para que los nombres largos no fallen
-        pdf_text_clean = re.sub(r'\s+', ' ', pdf_text)
-
         servicio_nombre = "GENERAL"
-        match_serv = re.search(r'Servicio\s*[:]\s*([^\r\n]+)', pdf_text_clean, re.IGNORECASE)
+        match_serv = re.search(r'Servicio\s*[:]\s*([^\r\n]+)', pdf_text, re.IGNORECASE)
         if match_serv:
             raw_serv = match_serv.group(1).strip()
             for stop_word in ['FECHA', 'NRO', 'VERSIÓN', 'VERSION', 'CÓDIGO', 'CODIGO']:
@@ -364,7 +341,8 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                 servicio_nombre = raw_serv
 
         firmantes_encontrados = []
-        matches_firma = re.finditer(r'(?:Firmado\s+electr[oó]nicamente\s+por|por\s*[:])\s*([A-ZÁÉÍÓÚÑ\s]{5,50})', pdf_text_clean, re.IGNORECASE)
+        texto_plano_continuo = re.sub(r'[\r\n]+', ' ', pdf_text)
+        matches_firma = re.finditer(r'(?:Firmado\s+electr[oó]nicamente\s+por|por\s*[:])\s*([A-ZÁÉÍÓÚÑ\s]{5,50})', texto_plano_continuo, re.IGNORECASE)
         for m in matches_firma:
             candidato = m.group(1).strip()
             palabras = [w for w in candidato.split() if w.isalpha() and len(w) > 1 and w.upper() not in ['VALIDAR', 'UNICAMENTE', 'FIRMAEC', 'TIME', 'STAMPING', 'SECURITY', 'DATA', 'QR', 'POR', 'DE', 'DEL', 'LA', 'LAS', 'LOS', 'EL', 'Y']]
@@ -377,14 +355,14 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         validado_por = firmantes_encontrados[1] if len(firmantes_encontrados) > 1 else ("DANIEL GUILLERMO DELEG SARI" if "EMERGENCIA" in servicio_nombre.upper() else "XIMENA KARINA CABRERA ZENTENO")
         entregado_por = "GUARDALMACÉN / DESPACHADOR"
 
-        idx_tabla = pdf_text_clean.find("Nro.")
-        texto_items = pdf_text_clean[idx_tabla:] if idx_tabla != -1 else pdf_text_clean
+        idx_tabla = pdf_text.find("Nro.")
+        texto_items = pdf_text[idx_tabla:] if idx_tabla != -1 else pdf_text
+        clean_blob = re.sub(r'\s+', ' ', texto_items)
         items_extraidos = []
         
         for i in range(1, 100):
-            # Patrón robusto tolerante a variaciones de espacios en blanco normalizados
-            pattern_general = r'(\d+)\s+([A-Za-z0-9\s%\.\-\/\(\)\#]+?)\s+(\d+)\s+(\d+)'
-            m = re.search(pattern_item, texto_items)
+            pattern_item = rf'(?:^|\s){i}\s+(.+?)\s*\(\s*AUTORIZADA[^\)]+\)\s*(\d+)\s+(\d+)'
+            m = re.search(pattern_item, clean_blob)
             if m:
                 desc = m.group(1).strip()
                 sol = int(m.group(2))
@@ -395,7 +373,7 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                     'Cantidades Solicitadas': sol,
                     'Cantidades Aprobadas': aprob
                 })
-                texto_items = texto_items.replace(m.group(0), "", 1)
+                clean_blob = clean_blob.replace(m.group(0), "", 1)
             else:
                 if i > 3:
                     break
@@ -411,15 +389,12 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                 
                 match_unif = df_unificado[df_unificado['clean_name'] == p_name]
                 if not match_unif.empty:
-                    codigo_val = match_unif.iloc[0].get(col_codigo, match_unif.iloc[0].get('Código', match_unif.iloc[0].get('Codigo', 'SIN-CODIGO'))) if col_codigo else match_unif.iloc[0].get('Código', 'SIN-CODIGO')
-                    codigo = str(codigo_val).strip() if pd.notna(codigo_val) else 'SIN-CODIGO'
-
-                    col_sku_target = col_sku if col_sku else [c for c in match_unif.columns if str(c).strip().upper() == 'SKU']
-                    sku_val = match_unif.iloc[0][col_sku_target] if isinstance(col_sku_target, str) and col_sku_target in match_unif.columns else (match_unif.iloc[0][col_sku_target[0]] if isinstance(col_sku_target, list) and col_sku_target else 'SIN-SKU')
+                    codigo = match_unif.iloc[0].get('Código', match_unif.iloc[0].get('Codigo', 'SIN-CODIGO'))
+                    col_sku = [c for c in match_unif.columns if str(c).strip().upper() == 'SKU']
+                    sku_val = match_unif.iloc[0][col_sku[0]] if col_sku else match_unif.iloc[0].get('SKU', 'SIN-SKU')
                     sku = str(sku_val).strip() if pd.notna(sku_val) else 'SIN-SKU'
 
-                    cols_bodega_candidatas = [c for c in match_unif.columns if 'BOD' in str(c).upper() or 'FARM' in str(c).upper() or 'STOCK' in str(c).upper()]
-                    col_bodega = cols_bodega_candidatas[0] if cols_bodega_candidatas else match_unif.columns[-1]
+                    col_bodega = [c for c in match_unif.columns if 'BOD' in str(c).upper() or 'FARM' in str(c).upper()][0] if [c for c in match_unif.columns if 'BOD' in str(c).upper()] else match_unif.columns[-1]
                     stock_bodega = match_unif.iloc[0][col_bodega]
                     if pd.isna(stock_bodega):
                         stock_bodega = 0.0
@@ -687,7 +662,6 @@ with tab_actas:
                     nuevo_elab = st.text_input("Elaboró", value=meta['elaborado_por'], key=f"elab_{idx}", label_visibility="collapsed")
                     st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Servicio Solicitante</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    meta['elaborado_por'] = nuevo_elab
 
                 with f_col2:
                     st.markdown('<div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">', unsafe_allow_html=True)
@@ -695,89 +669,78 @@ with tab_actas:
                     nuevo_entre = st.text_input("Entregado", value=meta['entregado_por'], key=f"entre_{idx}", label_visibility="collapsed")
                     st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Bodega Central / Farmacia</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    meta['entregado_por'] = nuevo_entre
 
                 with f_col3:
                     st.markdown('<div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">', unsafe_allow_html=True)
                     st.markdown('<div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; text-align: center; margin-bottom: 10px;">VALIDÓ / AUTORIZÓ:</div>', unsafe_allow_html=True)
-                    nuevo_vali = st.text_input("Validó", value=meta['validado_por'], key=f"vali_{idx}", label_visibility="collapsed")
+                    nuevo_val = st.text_input("Validó", value=meta['validado_por'], key=f"val_{idx}", label_visibility="collapsed")
                     st.markdown('<div style="font-size: 10px; color: gray; text-align: center; margin-top: 5px;">Jefatura / Responsable</div>', unsafe_allow_html=True)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    meta['validado_por'] = nuevo_vali
+
+                meta_list[idx]['elaborado_por'] = nuevo_elab
+                meta_list[idx]['entregado_por'] = nuevo_entre
+                meta_list[idx]['validado_por'] = nuevo_val
+
+                if st.button(f"💾 Guardar Cambios de esta Acta ({p_name})", key=f"btn_save_{idx}", type="primary"):
+                    st.session_state['res_pdf'] = generar_pdf_actas(st.session_state['df_resultado'], meta_list)
+                    st.success(f"¡Acta de {meta['servicio']} actualizada y guardada con éxito!")
             else:
                 with f_col1:
                     st.markdown(f"""
-                        <div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px); text-align: center;">
+                        <div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; text-align: center; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">
                             <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">ELABORÓ / RECIBIDO:</div>
-                            <br><br>
-                            <div style="font-size: 11px; color: #111827; border-top: 1px solid #1f4e78; padding-top: 5px; font-weight: bold;">{meta['elaborado_por']}</div>
-                            <div style="font-size: 10px; color: gray; margin-top: 2px;">Servicio Solicitante</div>
+                            <div style="height: 30px;"></div>
+                            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['elaborado_por']}</div>
+                            <div style="font-size: 10px; color: gray;">Servicio Solicitante</div>
                         </div>
                     """, unsafe_allow_html=True)
-
                 with f_col2:
                     st.markdown(f"""
-                        <div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px); text-align: center;">
+                        <div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; text-align: center; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">
                             <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">ENTREGADO BODEGA:</div>
-                            <br><br>
-                            <div style="font-size: 11px; color: #111827; border-top: 1px solid #1f4e78; padding-top: 5px; font-weight: bold;">{meta['entregado_por']}</div>
-                            <div style="font-size: 10px; color: gray; margin-top: 2px;">Bodega Central / Farmacia</div>
+                            <div style="height: 30px;"></div>
+                            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['entregado_por']}</div>
+                            <div style="font-size: 10px; color: gray;">Bodega Central / Farmacia</div>
                         </div>
                     """, unsafe_allow_html=True)
-
                 with f_col3:
                     st.markdown(f"""
-                        <div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px); text-align: center;">
+                        <div style="border: 1px solid rgba(208, 215, 222, 0.6); border-radius: 8px; padding: 15px; text-align: center; background-color: rgba(250, 251, 252, 0.9); backdrop-filter: blur(4px);">
                             <div style="background-color: #1f4e78; color: white; font-weight: bold; font-size: 11px; padding: 4px; border-radius: 4px; margin-bottom: 10px;">VALIDÓ / AUTORIZÓ:</div>
-                            <br><br>
-                            <div style="font-size: 11px; color: #111827; border-top: 1px solid #1f4e78; padding-top: 5px; font-weight: bold;">{meta['validado_por']}</div>
-                            <div style="font-size: 10px; color: gray; margin-top: 2px;">Jefatura / Responsable</div>
+                            <div style="height: 30px;"></div>
+                            <div style="border-top: 1px solid #333; margin-top: 10px; padding-top: 5px; font-weight: bold; font-size: 11px; color: #1f4e78;">{meta['validado_por']}</div>
+                            <div style="font-size: 10px; color: gray;">Jefatura / Responsable</div>
                         </div>
                     """, unsafe_allow_html=True)
 
-            st.markdown('</div>', unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("</div><br>", unsafe_allow_html=True)
+
     else:
-        st.info("ℹ️ Ejecute el cruce FEFO en el módulo superior para visualizar las actas oficiales por servicio.")
+        st.info("ℹ️ Ejecute el cruce FEFO para visualizar el formato interactivo de las Actas Oficiales.")
 
 # PESTAÑA 3: LOTES Y CADUCIDADES
 with tab_lotes:
-    st.markdown('<div class="tab-content-box">', unsafe_allow_html=True)
-    st.markdown("## 📦 Gestión de Lotes y Control FEFO")
-    st.markdown("Este módulo permite supervisar el inventario de lotes cargados desde el archivo Excel para asegurar la rotación correcta de productos (First Expire, First Out).")
-    
-    if uploaded_lotes is not None:
-        try:
-            df_lotes_preview = cargar_excel_seguro(uploaded_lotes.read())
-            uploaded_lotes.seek(0)
-            st.success(f"✅ Archivo de lotes cargado correctamente ({len(df_lotes_preview)} registros encontrados).")
-            
-            busq_lote = st.text_input("🔍 Filtrar lotes por producto, número de lote o código...", key="busq_lote_input")
-            if busq_lote:
-                mask_l = df_lotes_preview.astype(str).apply(lambda x: x.str.contains(busq_lote, case=False)).any(axis=1)
-                df_lotes_preview = df_lotes_preview[mask_l]
-            
-            st.dataframe(df_lotes_preview, use_container_width=True, hide_index=True)
-        except Exception as e:
-            st.error(f"Error al leer el archivo de lotes: {e}")
+    if 'df_resultado' in st.session_state:
+        st.markdown("""
+            <div class="tab-content-box">
+                <h2>📊 Lotes y Caducidades Registradas</h2>
+            </div>
+        """, unsafe_allow_html=True)
+        st.dataframe(st.session_state['df_resultado'][['Nro.', 'PDF Origen', 'Servicio', 'Dispositivo Médico', 'Lotes y Cantidades a Despachar', 'Fechas Caducidad']], use_container_width=True, hide_index=True)
     else:
-        st.info("ℹ️ Cargue el archivo Excel de Lotes y Fechas de Caducidad en el panel superior para visualizar el inventario.")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.info("Cargue los archivos para ver la distribución de lotes y fechas de caducidad.")
 
 # PESTAÑA 4: PLANTILLAS Y AYUDA
 with tab_ayuda:
-    st.markdown('<div class="tab-content-box">', unsafe_allow_html=True)
-    st.markdown("## 💡 Guía de Uso y Plantillas Institucionales")
     st.markdown("""
-        ### Instrucciones de Operación:
-        1. **Requisiciones PDF (Lote):** Seleccione uno o varios archivos PDF de requisiciones de los diferentes servicios del hospital.
-        2. **Excel de Lotes y F. Cad:** Cargue el reporte institucional con el detalle de lotes, existencias y fechas de caducidad.
-        3. **Excel Unificado (Stock General):** Cargue el archivo general con el stock consolidado de bodega/farmacia, códigos y SKU.
-        4. **Ejecutar Cruce:** Haga clic en el botón principal para procesar automáticamente el algoritmo FEFO. El sistema asignará los lotes más próximos a vencer y generará las alertas rojas en caso de stock insuficiente.
-        
-        ### Soporte Técnico Institucional:
-        * **Hospital Provincial General Docente Vicente Corral Moscoso**
-        * Departamento de Bodega y Gestión de Dispositivos Médicos.
-    """)
-    st.markdown('</div>', unsafe_allow_html=True)
+        <div class="tab-content-box">
+            <h2>💡 Plantillas y Ayuda del Sistema</h2>
+            <hr style="border: 0; border-top: 1px solid rgba(208, 215, 222, 0.6); margin-bottom: 20px;">
+            <ul>
+                <li><b>Paso 1:</b> Suba sus archivos PDF con los pedidos de requisición de los diferentes servicios hospitalarios.</li>
+                <li><b>Paso 2:</b> Cargue el Excel de existencias por lote y fecha de caducidad (<code>F. Cad</code>).</li>
+                <li><b>Paso 3:</b> Cargue el archivo Excel unificado de stock general de bodega o farmacia.</li>
+                <li><b>Paso 4:</b> Presione el botón <b>🚀 Ejecutar Cruce FEFO en Lote</b> para consolidar automáticamente todo el sistema con el formato oficial.</li>
+            </ul>
+        </div>
+    """, unsafe_allow_html=True)
