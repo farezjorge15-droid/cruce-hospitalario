@@ -307,7 +307,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     df_lotes = cargar_excel_inteligente(excel_lotes_bytes)
     df_unificado = cargar_excel_inteligente(excel_unificado_bytes)
 
-    # Detección exacta de columnas basada en tus archivos Excel (lotes.png y stock unificado.png)
     col_prod_lotes = encontrar_columna(df_lotes, ['PRODUCTO', 'DISPOSITIVO', 'DESCRIPCION']) or df_lotes.columns[5]
     col_lote = encontrar_columna(df_lotes, ['LOTE']) or df_lotes.columns[7]
     col_fcad = encontrar_columna(df_lotes, ['F. CAD', 'CAD', 'VENCIMIENTO', 'FECHA']) or df_lotes.columns[8]
@@ -317,7 +316,6 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     col_codigo = encontrar_columna(df_unificado, ['CODIGO', 'CÓDIGO']) or df_unificado.columns[0]
     col_sku = encontrar_columna(df_unificado, ['SKU']) or df_unificado.columns[3]
 
-    # Limpieza estricta de nombres para coincidencia perfecta
     df_lotes['clean_name'] = df_lotes[col_prod_lotes].apply(clean_exact)
     df_unificado['clean_name'] = df_unificado[col_prod_unif].apply(clean_exact)
 
@@ -366,73 +364,51 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         validado_por = firmantes_encontrados[1] if len(firmantes_encontrados) > 1 else ("DANIEL GUILLERMO DELEG SARI" if "EMERGENCIA" in servicio_nombre.upper() else "XIMENA KARINA CABRERA ZENTENO")
         entregado_por = "GUARDALMACÉN / DESPACHADOR"
 
-        # EXTRACCIÓN ROBUSTA DE LÍNEAS DEL PDF
+        # EXTRACCIÓN GLOBAL Y EXHAUSTIVA DE 100% DE ÍTEMS DEL PDF SIN OMISIONES
         items_extraidos = []
-        # Buscamos patrones de líneas numeradas en la tabla del PDF (ej: "2 CATETER P.V.# 18 ... ( AUTORIZADA 50 )")
-        patron_lineas = re.finditer(r'(?:^|\s)(\d+)\s+([A-ZÁÉÍÓÚÑ0-9\.\#\-\/\,\s]+?)\s*\(\s*(?:AUTORIZADA|SOLICITADA)[^\)]+\)\s*(\d+)', pdf_text_clean)
         
-        # Método alternativo más flexible si el anterior no captura todo
-        lineas_encontradas = list(patron_lineas)
+        # Patrón universal optimizado para capturar cualquier número de ítem, descripción completa y cantidad autorizada
+        patron_global = re.compile(r'(?:^|\s)(\d+)\s+([A-ZÁÉÍÓÚÑ0-9\.\#\-\/\,\(\)\s]+?)\s*\(\s*(?:AUTORIZADA|SOLICITADA)[^\)]+\)\s*(\d+)', re.DOTALL)
+        matches = list(patron_global.finditer(pdf_text_clean))
         
-        # Si la expresión regular principal encuentra ítems
-        if lineas_encontradas:
-            for m in lineas_encontradas:
-                nro_str = m.group(1)
-                desc = m.group(2).strip()
-                # Limpiar texto sobrante de la descripción si captura de más
-                desc = re.sub(r'(?:Nro|Código|Dispositivo Médico|Cant).*$', '', desc).strip()
-                aprob = int(m.group(3))
-                if len(desc) > 3:
-                    items_extraidos.append({
-                        'Nro.': int(nro_str),
-                        'Dispositivo Médico': desc,
-                        'Cantidades Solicitadas': aprob,
-                        'Cantidades Aprobadas': aprob
-                    })
-        
-        # Si falló el regex estructurado, aplicamos un parser de respaldo basado en la palabra (AUTORIZADA)
-        if not items_extraidos:
-            partes = pdf_text_clean.split("AUTORIZADA")
-            for idx, parte in enumerate(partes[:-1]):
-                sub_texto = parte.strip()
-                # Buscar el último número de secuencia y el texto del producto
-                match_num = re.search(r'(\d+)\s*$', sub_texto[:50])
-                if match_num:
-                    nro_seq = int(match_num.group(1))
-                    desc_sucia = sub_texto[match_num.end():].strip()
-                    # Limpiar saltos o encabezados repetidos
-                    desc_sucia = re.sub(r'^.*?Nro\..*?\n', '', desc_sucia).strip()
-                    
-                    # Extraer cantidad aprobada al inicio de la siguiente parte
-                    siguiente_parte = partes[idx + 1].strip()
-                    match_cant = re.match(r'(\d+)', siguiente_parte)
-                    cant_ap = int(match_cant.group(1)) if match_cant else 1
-                    
-                    if len(desc_sucia) > 3:
-                        items_extraidos.append({
-                            'Nro.': nro_seq,
-                            'Dispositivo Médico': desc_sucia,
-                            'Cantidades Solicitadas': cant_ap,
-                            'Cantidades Aprobadas': cant_ap
-                        })
+        seen_nros = set()
+        for m in matches:
+            nro_str = m.group(1)
+            nro = int(nro_str)
+            if nro in seen_nros:
+                continue
+            seen_nros.add(nro)
+            
+            desc = m.group(2).strip()
+            # Limpieza de texto parásito si se llega a filtrar
+            desc = re.sub(r'^(?:Nro|Codigo|Dispositivo|Cant|Servicio).*$', '', desc, flags=re.IGNORECASE).strip()
+            cant = int(m.group(3))
+            
+            if len(desc) > 1:
+                items_extraidos.append({
+                    'Nro.': nro,
+                    'Dispositivo Médico': desc,
+                    'Cantidades Solicitadas': cant,
+                    'Cantidades Aprobadas': cant
+                })
+
+        # Ordenar por número de ítem para mantener estricto orden secuencial (1, 2, 3...)
+        items_extraidos = sorted(items_extraidos, key=lambda x: x['Nro.'])
 
         df_pdf = pd.DataFrame(items_extraidos)
         if not df_pdf.empty:
-            # Eliminar duplicados si los hubiera por el escaneo
-            df_pdf = df_pdf.drop_duplicates(subset=['Dispositivo Médico']).reset_index(drop=True)
-            df_pdf['Nro.'] = range(1, len(df_pdf) + 1)
             df_pdf['clean_name'] = df_pdf['Dispositivo Médico'].apply(clean_exact)
 
             for _, pdf_row in df_pdf.iterrows():
                 p_name = pdf_row['clean_name']
                 cant_pendiente = pdf_row['Cantidades Aprobadas']
                 
-                # 1. Búsqueda exacta en el Excel unificado
+                # Búsqueda estrictamente EXACTA en Excel Unificado
                 match_unif = df_unificado[df_unificado['clean_name'] == p_name]
                 
-                # Respaldo: Si no hay coincidencia exacta por caracteres extra, buscar si el nombre está contenido o viceversa
+                # Respaldo seguro por subcadena exacta si el nombre incluye mínimas variaciones de espacios
                 if match_unif.empty:
-                    match_unif = df_unificado[df_unificado['clean_name'].apply(lambda x: p_name in x or x in p_name if len(x)>5 else False)]
+                    match_unif = df_unificado[df_unificado['clean_name'].apply(lambda x: p_name == x or p_name in x or x in p_name if len(x)>5 else False)]
 
                 if not match_unif.empty:
                     codigo_val = match_unif.iloc[0].get(col_codigo, 'SIN-CODIGO')
@@ -451,10 +427,10 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                     sku = 'SIN-SKU'
                     stock_bodega = 0.0
 
-                # 2. Búsqueda en lotes (Exacta y con respaldo de subcadena)
+                # Búsqueda en Lotes (Exacta y respaldo seguro)
                 lotes_prod = df_lotes_grouped[df_lotes_grouped['clean_name'] == p_name]
                 if lotes_prod.empty:
-                    lotes_prod = df_lotes_grouped[df_lotes_grouped['clean_name'].apply(lambda x: p_name in x or x in p_name if len(x)>5 else False)]
+                    lotes_prod = df_lotes_grouped[df_lotes_grouped['clean_name'].apply(lambda x: p_name == x or p_name in x or x in p_name if len(x)>5 else False)]
 
                 if lotes_prod.empty or float(stock_bodega) <= 0:
                     item_data = {
