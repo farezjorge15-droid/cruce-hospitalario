@@ -1,4 +1,3 @@
-import streamlit as str_lit
 import streamlit as st
 import pypdf
 import pandas as pd
@@ -216,7 +215,7 @@ with st.expander("📂 Módulo de Carga en Lote (Requisiciones & Inventarios)", 
 
 # Funciones de procesamiento seguro y lectura inteligente de Excel
 def cargar_excel_inteligente(file_bytes):
-    """Detecta automáticamente la fila de encabezados real en archivos de Excel institucionales."""
+    """Detecta automáticamente la fila de encabezados real buscando la columna 'PRODUCTO'."""
     try:
         df_raw = pd.read_excel(io.BytesIO(file_bytes), header=None, engine='openpyxl')
     except Exception:
@@ -226,9 +225,9 @@ def cargar_excel_inteligente(file_bytes):
             df_raw = pd.read_excel(io.BytesIO(file_bytes), header=None)
 
     header_row = 0
-    for i in range(min(10, len(df_raw))):
+    for i in range(min(15, len(df_raw))):
         fila_str = " ".join([str(val).upper() for val in df_raw.iloc[i].values if pd.notna(val)])
-        if any(kw in fila_str for kw in ['PRODUCTO', 'DISPOSITIVO', 'DESCRIPCION', 'LOTE', 'CODIGO', 'EXISTEN']):
+        if 'PRODUCTO' in fila_str or 'DISPOSITIVO' in fila_str or 'DESCRIPCION' in fila_str:
             header_row = i
             break
 
@@ -243,32 +242,17 @@ def cargar_excel_inteligente(file_bytes):
 def clean_exact(s):
     if not isinstance(s, str):
         return ""
+    # Normalización exacta preservando letras, números y espacios para coincidencia perfecta
     s = unicodedata.normalize('NFD', s).encode('ascii', 'ignore').decode("utf-8")
     s = s.upper().strip()
-    s = re.sub(r'[^A-Z0-9\s]', '', s)
     s = re.sub(r'\s+', ' ', s)
     return s
 
-def detectar_columna_producto(df):
-    for col in df.columns:
-        col_str = str(col).strip().upper()
-        if any(kw in col_str for kw in ['PRODUCTO', 'DISPOSITIVO', 'DESCRIPCION', 'DETALLE', 'ARTICULO', 'ITEM']):
-            return col
-    max_len = -1
-    best_col = df.columns[0]
-    for col in df.columns:
-        if df[col].dtype == object:
-            avg_len = df[col].dropna().astype(str).str.len().mean()
-            if pd.notna(avg_len) and avg_len > max_len:
-                max_len = avg_len
-                best_col = col
-    return best_col
-
-def encontrar_columna(df, posibles_nombres):
+def encontrar_columna_exacta(df, posibles_nombres):
     for col in df.columns:
         col_str = str(col).strip().upper()
         for p in posibles_nombres:
-            if p in col_str:
+            if p == col_str or p in col_str:
                 return col
     return None
 
@@ -349,16 +333,18 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
     df_lotes = cargar_excel_inteligente(excel_lotes_bytes)
     df_unificado = cargar_excel_inteligente(excel_unificado_bytes)
 
-    col_prod_lotes = detectar_columna_producto(df_lotes)
-    col_prod_unif = detectar_columna_producto(df_unificado)
+    # Identificar la columna de producto exactamente como se muestra en las imágenes (Producto)
+    col_prod_lotes = encontrar_columna_exacta(df_lotes, ['PRODUCTO', 'DISPOSITIVO', 'DESCRIPCION']) or df_lotes.columns[5]
+    col_prod_unif = encontrar_columna_exacta(df_unificado, ['PRODUCTO', 'DISPOSITIVO', 'DESCRIPCION']) or df_unificado.columns[4]
 
-    col_lote = encontrar_columna(df_lotes, ['LOTE']) or df_lotes.columns[1]
-    col_fcad = encontrar_columna(df_lotes, ['CAD', 'VENCIMIENTO', 'FECHA']) or df_lotes.columns[2]
-    col_existen = encontrar_columna(df_lotes, ['EXISTEN', 'STOCK', 'SALDO', 'CANTIDAD']) or df_lotes.columns[3]
+    col_lote = encontrar_columna_exacta(df_lotes, ['LOTE']) or df_lotes.columns[7]
+    col_fcad = encontrar_columna_exacta(df_lotes, ['F. CAD', 'CAD', 'VENCIMIENTO', 'FECHA']) or df_lotes.columns[8]
+    col_existen = encontrar_columna_exacta(df_lotes, ['EXISTEN', 'STOCK', 'SALDO']) or df_lotes.columns[10]
 
-    col_codigo = encontrar_columna(df_unificado, ['CODIGO', 'CÓDIGO'])
-    col_sku = encontrar_columna(df_unificado, ['SKU'])
+    col_codigo = encontrar_columna_exacta(df_unificado, ['CODIGO', 'CÓDIGO']) or df_unificado.columns[0]
+    col_sku = encontrar_columna_exacta(df_unificado, ['SKU']) or df_unificado.columns[3]
 
+    # Limpieza estricta de nombres para coincidencia 100% exacta
     df_lotes['clean_name'] = df_lotes[col_prod_lotes].apply(clean_exact)
     df_unificado['clean_name'] = df_unificado[col_prod_unif].apply(clean_exact)
 
@@ -441,11 +427,10 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
                 # Búsqueda estrictamente EXACTA del nombre completo del producto
                 match_unif = df_unificado[df_unificado['clean_name'] == p_name]
                 if not match_unif.empty:
-                    codigo_val = match_unif.iloc[0].get(col_codigo, match_unif.iloc[0].get('Código', match_unif.iloc[0].get('Codigo', 'SIN-CODIGO'))) if col_codigo else match_unif.iloc[0].get('Código', 'SIN-CODIGO')
+                    codigo_val = match_unif.iloc[0].get(col_codigo, 'SIN-CODIGO')
                     codigo = str(codigo_val).strip() if pd.notna(codigo_val) else 'SIN-CODIGO'
 
-                    col_sku_target = col_sku if col_sku else [c for c in match_unif.columns if str(c).strip().upper() == 'SKU']
-                    sku_val = match_unif.iloc[0][col_sku_target] if isinstance(col_sku_target, str) and col_sku_target in match_unif.columns else (match_unif.iloc[0][col_sku_target[0]] if isinstance(col_sku_target, list) and col_sku_target else 'SIN-SKU')
+                    sku_val = match_unif.iloc[0].get(col_sku, 'SIN-SKU')
                     sku = str(sku_val).strip() if pd.notna(sku_val) else 'SIN-SKU'
 
                     cols_bodega_candidatas = [c for c in match_unif.columns if 'BOD' in str(c).upper() or 'FARM' in str(c).upper() or 'STOCK' in str(c).upper() or 'SALDO' in str(c).upper()]
