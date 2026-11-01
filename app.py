@@ -384,6 +384,7 @@ def procesar_cruce_hospitalario_lote(lista_pdfs, excel_lotes_bytes, excel_unific
         for i in range(1, 100):
             # Patrón robusto tolerante a variaciones de espacios en blanco normalizados
             pattern_item = rf'(?:^|\s){i}\s+(.+?)\s*\(\s*AUTORIZADA[^\)]+\)\s*(\d+)\s+(\d+)'
+            pattern_general = r'(\d+)\s+([A-Za-z0-9\s%\.\-\/\(\)\#]+?)\s+(\d+)\s+(\d+)'
             m = re.search(pattern_item, texto_items)
             if m:
                 desc = m.group(1).strip()
